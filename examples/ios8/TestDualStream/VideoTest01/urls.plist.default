@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>camera_uri</key>
+    <!-- Axis MPEG4 Camera Url template -->
+	<string>rtsp://user:password@192.168.1.10/mpeg4/media.amp</string>
+    <!-- Axis H264 Encoder Url template -->
+	<key>encoder_uri</key>
+	<string>rtsp://user:password@192.168.1.11/axis-media/media.amp</string>
+</dict>
+</plist>
