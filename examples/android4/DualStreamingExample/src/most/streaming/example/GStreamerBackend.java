@@ -7,12 +7,14 @@ import android.content.Context;
 
 import android.util.Log;
 import android.view.Surface;
+import android.view.SurfaceView;
 
 public class GStreamerBackend {
 
 	
-    private native void nativeInit();     // Initialize native code, build pipeline, etc
+    private native void nativeInit(String streamName);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
+    private native void nativeFinalizeGlobals(); // Destroy the global gstreamer references
     private native void nativeSetUri(String uri); // Set the URI of the media to play
     private native void nativePlay();     // Set pipeline to PLAYING
     private native void nativeSetPosition(int milliseconds); // Seek to the indicated position, in milliseconds
@@ -33,18 +35,25 @@ public class GStreamerBackend {
     }
     
     private GStreamerListener gstListener = null;
+
+	private SurfaceView surfaceView;
     
-    public GStreamerBackend (Context context, GStreamerListener gstListener, String uri) throws Exception {
+    public GStreamerBackend (Context context, GStreamerListener gstListener, String uri, SurfaceView surfaceView) throws Exception {
         
     	this.gstListener = gstListener;
     	GStreamer.init(context);
     	this.uri = uri;
+    	this.surfaceView = surfaceView;
     }
 	
+    public SurfaceView getSurfaceView() {
+    	return this.surfaceView;
+    }
     
 	public void play() {
 		nativePlay();
 	}
+	
 	public void pause() {
 		nativePause();
 	}
@@ -59,8 +68,12 @@ public class GStreamerBackend {
 		nativeFinalize();
 	}
 	
-	public void init() {
-	   nativeInit();
+	public void finalizeGlobals() {
+		nativeFinalizeGlobals();
+	}
+	
+	public void init(String streamName) {
+	   nativeInit(streamName);
 	}
 	
 	public void surfaceInit(Surface surface) {
@@ -74,15 +87,15 @@ public class GStreamerBackend {
 	 // Called from native code
     private void setMessage(final String message)
     {
-    	Log.d("GSTREAMER_BACKEND", "Message from Gstreamer:" + message);
-    	this.gstListener.setMessage("From Backend:" + message);
+    	//Log.d("GSTREAMER_BACKEND", "Message from Gstreamer:" + message);
+    	this.gstListener.setMessage(this,"From Backend:" + message);
     }
     
     // Called from native code
     private void onGStreamerInitialized()
     {   
     	nativeSetUri(this.uri);
-    	gstListener.onGStreamerInitialized();
+    	gstListener.onGStreamerInitialized(this);
     }
     
      // Called from native code
@@ -95,6 +108,7 @@ public class GStreamerBackend {
     // Inform the video surface about the new size and recalculate the layout.
     private void onMediaSizeChanged (int width, int height) {
         Log.i ("GStreamer", "Media size changed to " + width + "x" + height);
+       gstListener.onMediaSizeChanged(this,width, height);
     }
 }
 

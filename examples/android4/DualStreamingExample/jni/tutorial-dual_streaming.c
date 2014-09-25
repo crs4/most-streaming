@@ -30,6 +30,8 @@ GST_DEBUG_CATEGORY_STATIC (debug_category);
 /* Structure to contain all our information, so we can pass it to callbacks */
 typedef struct _CustomData {
   jobject app;                  /* Application instance, used to call its methods. A global reference is kept. */
+  char* stream_name;           /* a name indicating the particular streaming instance */
+  pthread_t gst_app_thread;     /* Thread where running a single pipeline */
   GstElement *pipeline;         /* The running pipeline */
   GMainContext *context;        /* GLib context used to run the main loop */
   GMainLoop *main_loop;         /* GLib main loop */
@@ -49,7 +51,8 @@ typedef enum {
 } GstPlayFlags;
 
 /* These global variables cache values which are not changing during execution */
-static pthread_t gst_app_thread;
+//static pthread_t gst_app_thread;
+
 static pthread_key_t current_jni_env;
 static JavaVM *java_vm;
 static jfieldID custom_data_field_id;
@@ -58,6 +61,8 @@ static jmethodID set_current_position_method_id;
 static jmethodID on_gstreamer_initialized_method_id;
 static jmethodID on_media_size_changed_method_id;
 
+
+//static jobject global_app;                  /* Application instance, used to call its methods. A global reference is kept. */
 /*
  * Private methods
  */
@@ -101,7 +106,7 @@ static JNIEnv *get_jni_env (void) {
 /* Change the content of the UI's TextView */
 static void set_ui_message (const gchar *message, CustomData *data) {
   JNIEnv *env = get_jni_env ();
-  GST_DEBUG ("Setting message to: %s", message);
+ // GST_DEBUG ("Setting message to: %s", message);
   jstring jmessage = (*env)->NewStringUTF(env, message);
   (*env)->CallVoidMethod (env, data->app, set_message_method_id, jmessage);
   if ((*env)->ExceptionCheck (env)) {
@@ -249,6 +254,7 @@ static void clock_lost_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 
 /* Retrieve the video sink's Caps and tell the application about the media size */
 static void check_media_size (CustomData *data) {
+	GST_DEBUG ("DENTRO CHECK_MEDIA SIZE..." );
   JNIEnv *env = get_jni_env ();
   GstElement *video_sink;
   GstPad *video_sink_pad;
@@ -259,12 +265,83 @@ static void check_media_size (CustomData *data) {
   g_object_get (data->pipeline, "video-sink", &video_sink, NULL);
   video_sink_pad = gst_element_get_static_pad (video_sink, "sink");
   caps = gst_pad_get_current_caps (video_sink_pad);
-
+  GST_DEBUG ("DENTRO CHECK_MEDIA SIZE -> dopo gst_pad_get_current_caps" );
   if (gst_video_info_from_caps (&info, caps)) {
     info.width = info.width * info.par_n / info.par_d;
     GST_DEBUG ("Media size is %dx%d, notifying application", info.width, info.height);
 
     (*env)->CallVoidMethod (env, data->app, on_media_size_changed_method_id, (jint)info.width, (jint)info.height);
+    if ((*env)->ExceptionCheck (env)) {
+      GST_ERROR ("Failed to call Java method");
+      (*env)->ExceptionClear (env);
+    }
+  }
+  else
+  {
+	  GST_DEBUG ("DENTRO CHECK_MEDIA SIZE: IMPOSSIBILE RECUPERARE VIDEO INFO FROM CAPS!!");
+  }
+
+  gst_caps_unref(caps);
+  gst_object_unref (video_sink_pad);
+  gst_object_unref(video_sink);
+}
+
+
+/* Retrieve the video sink's Caps and tell the application about the media size */
+static void check_media_size_OLD (CustomData *data) {
+  JNIEnv *env = get_jni_env ();
+  GstElement *video_sink;
+  GstPad *video_sink_pad;
+  GstCaps *caps;
+  GstStructure *structure; // ADDED ...see  https://gitorious.org/vaapi/sree-gstreamer-vaapi/commit/40ac87b45e721b9141b183cfc682b1ccbabf3087
+  GstVideoFormat fmt;
+  int width;
+  int height;
+
+  /* Retrieve the Caps at the entrance of the video sink */
+  g_object_get (data->pipeline, "video-sink", &video_sink, NULL);
+  video_sink_pad = gst_element_get_static_pad (video_sink, "sink");
+
+ //caps = gst_pad_get_negotiated_caps (video_sink_pad); // deprecated
+  GST_DEBUG ("prima di  gst_pad_get_current_caps!" );
+  caps =  gst_pad_get_current_caps (video_sink_pad);
+  // see http://cgit.freedesktop.org/gstreamer/gstreamer/tree/docs/random/porting-to-1.0.txt
+  GST_DEBUG ("prima di  GstVideoInfo!" );
+  GstVideoInfo  videoInfo;
+  /*
+  GST_DEBUG ("prima di  allocare width in GstVideoInfo!" );
+  videoInfo->width = width;
+  GST_DEBUG ("prima di  allocare height in GstVideoInfo!" );
+  videoInfo->height = height;
+  GST_DEBUG ("prima di  GstVideoFormatInfo!" );
+  GstVideoFormatInfo * formatInfo;
+  formatInfo->format = fmt;
+
+  videoInfo -> finfo = formatInfo;
+  */
+
+  GST_DEBUG ("prima di gst_video_info_from_caps!" );
+  if (gst_video_info_from_caps(&videoInfo, caps))
+ // if (gst_video_format_parse_caps(caps, &fmt, &width, &height)) // deprecated
+
+  {
+	  GST_DEBUG ("CALLED check_media_size!!!" );
+
+
+	  structure = gst_caps_get_structure(caps, 0);
+	  gst_structure_get_int(structure, "width", &width);
+	  gst_structure_get_int(structure, "height", &height);
+
+    /* [[TO DO]]
+	int par_n, par_d;
+
+    if (gst_video_parse_caps_pixel_aspect_ratio (caps, &par_n, &par_d)) {
+      width = width * par_n / par_d;
+    }
+    */
+    GST_DEBUG ("Media size is %dx%d, notifying application", width, height);
+
+    (*env)->CallVoidMethod (env, data->app, on_media_size_changed_method_id, (jint)width, (jint)height);
     if ((*env)->ExceptionCheck (env)) {
       GST_ERROR ("Failed to call Java method");
       (*env)->ExceptionClear (env);
@@ -397,17 +474,30 @@ static void *app_function (void *userdata) {
  */
 
 /* Instruct the native code to create its internal data structure, pipeline and thread */
-static void gst_native_init (JNIEnv* env, jobject thiz) {
+static void gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name) {
   CustomData *data = g_new0 (CustomData, 1);
   data->desired_position = GST_CLOCK_TIME_NONE;
   data->last_seek_time = GST_CLOCK_TIME_NONE;
+
+  data->stream_name =  (*env)->GetStringUTFChars(env, stream_name  , 0);
+
   SET_CUSTOM_DATA (env, thiz, custom_data_field_id, data);
-  GST_DEBUG_CATEGORY_INIT (debug_category, "most_dual_streaming", 0, "Android tutorial 4");
+  GST_DEBUG_CATEGORY_INIT (debug_category, "most_dual_streaming", 0, "Android dual streming");
   gst_debug_set_threshold_for_name("most_dual_streaming", GST_LEVEL_DEBUG);
   GST_DEBUG ("Created CustomData at %p", data);
-  data->app = (*env)->NewGlobalRef (env, thiz);
+/*
+  if (!global_app)
+  {
+	  GST_DEBUG ("Global App not defined... defining it...");
+	  global_app = (*env)->NewGlobalRef (env, thiz);
+  }
+  else {
+	  GST_DEBUG ("Global App ALREADY defined");
+  }
+ */
+  data->app =  (*env)->NewGlobalRef (env, thiz);
   GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
-  pthread_create (&gst_app_thread, NULL, &app_function, data);
+  pthread_create (&data->gst_app_thread, NULL, &app_function, data);
 }
 
 /* Quit the main loop, remove the native thread and free resources */
@@ -417,25 +507,54 @@ static void gst_native_finalize (JNIEnv* env, jobject thiz) {
   GST_DEBUG ("Quitting main loop...");
   g_main_loop_quit (data->main_loop);
   GST_DEBUG ("Waiting for thread to finish...");
-  pthread_join (gst_app_thread, NULL);
-  GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
-  (*env)->DeleteGlobalRef (env, data->app);
-  GST_DEBUG ("Freeing CustomData at %p", data);
-  g_free (data);
-  SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
-  GST_DEBUG ("Done finalizing");
+  pthread_join (data->gst_app_thread, NULL);
+  //GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
+  //(*env)->DeleteGlobalRef (env, data->app);
+  //GST_DEBUG ("Freeing CustomData at %p", data);
+  //g_free (data);
+  //SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
+  //GST_DEBUG ("Done finalizing");
+}
+
+/*  free global resources */
+static void gst_native_finalize_globals (JNIEnv* env, jobject thiz)
+{
+	 GST_DEBUG ("IN  gst_native_finalize_globals ");
+	CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+	  if (!data) return;
+	  GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
+	 (*env)->DeleteGlobalRef (env, data->app);
+	 GST_DEBUG ("Freeing CustomData at %p", data);
+	 g_free (data);
+	 SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
+	 //global_app = NULL;
+	 GST_DEBUG ("Done finalizing");
 }
 
 /* Set playbin's URI */
 void gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
+   GST_DEBUG ("called gst_native_set_uri!!!!");
+
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-  if (!data || !data->pipeline) return;
+  if (!data || !data->pipeline)
+	  {
+	  GST_DEBUG ("Custom data not defined!");
+	  return;
+	  }
+
   const jbyte *char_uri = (*env)->GetStringUTFChars (env, uri, NULL);
-  GST_DEBUG ("Setting URI to %s", char_uri);
+  GST_DEBUG ("Setting URI:::: %s" , char_uri);
+
+
+  GST_DEBUG ("STream name is:%s", data->stream_name);
+
   if (data->target_state >= GST_STATE_READY)
     gst_element_set_state (data->pipeline, GST_STATE_READY);
   g_object_set(data->pipeline, "uri", char_uri, NULL);
+
   (*env)->ReleaseStringUTFChars (env, uri, char_uri);
+  //(*env)->ReleaseStringUTFChars (env, data->stream_name, char_stream);
+
   data->duration = GST_CLOCK_TIME_NONE;
   data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
 }
@@ -444,7 +563,7 @@ void gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
 static void gst_native_play (JNIEnv* env, jobject thiz) {
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
   if (!data) return;
-  GST_DEBUG ("Setting state to PLAYING");
+  GST_DEBUG ("Setting state to PLAYING for stream:%s" , data->stream_name);
   data->target_state = GST_STATE_PLAYING;
   data->is_live = (gst_element_set_state (data->pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_NO_PREROLL);
 }
@@ -453,7 +572,7 @@ static void gst_native_play (JNIEnv* env, jobject thiz) {
 static void gst_native_pause (JNIEnv* env, jobject thiz) {
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
   if (!data) return;
-  GST_DEBUG ("Setting state to PAUSED");
+  GST_DEBUG ("Setting state to PAUSED for stream:%s" , data->stream_name);
   data->target_state = GST_STATE_PAUSED;
   data->is_live = (gst_element_set_state (data->pipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_NO_PREROLL);
 }
@@ -486,6 +605,10 @@ static jboolean gst_native_class_init (JNIEnv* env, jclass klass) {
      */
     __android_log_print (ANDROID_LOG_ERROR, "most_dual_streaming", "The calling class does not implement all necessary interface methods");
     return JNI_FALSE;
+  }
+  else
+  {
+	  __android_log_print (ANDROID_LOG_ERROR, "most_dual_streaming", "The calling class does implements all necessary interface methods. Ok");
   }
   return JNI_TRUE;
 }
@@ -532,8 +655,9 @@ static void gst_native_surface_finalize (JNIEnv *env, jobject thiz) {
 
 /* List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-  { "nativeInit", "()V", (void *) gst_native_init},
+  { "nativeInit", "(Ljava/lang/String;)V", (void *) gst_native_init},
   { "nativeFinalize", "()V", (void *) gst_native_finalize},
+  { "nativeFinalizeGlobals", "()V", (void *) gst_native_finalize_globals},
   { "nativeSetUri", "(Ljava/lang/String;)V", (void *) gst_native_set_uri},
   { "nativePlay", "()V", (void *) gst_native_play},
   { "nativePause", "()V", (void *) gst_native_pause},
