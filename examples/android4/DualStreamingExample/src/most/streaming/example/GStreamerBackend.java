@@ -7,15 +7,17 @@ import android.content.Context;
 
 import android.util.Log;
 import android.view.Surface;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-public class GStreamerBackend {
+public class GStreamerBackend implements SurfaceHolder.Callback {
 
 	
-    private native void nativeInit(String streamName);     // Initialize native code, build pipeline, etc
+    private native void nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
     private native void nativeFinalizeGlobals(); // Destroy the global gstreamer references
     private native void nativeSetUri(String uri); // Set the URI of the media to play
+    private native int nativeGetLatency(); // Get the latency of the stream to play
     private native void nativePlay();     // Set pipeline to PLAYING
     private native void nativeSetPosition(int milliseconds); // Seek to the indicated position, in milliseconds
     private native void nativePause();    // Set pipeline to PAUSED
@@ -25,6 +27,8 @@ public class GStreamerBackend {
     private long native_custom_data;      // Native code will use this to keep private data
     
     private String uri = null;
+    private String streamName = null;
+    private int latency = 200;
     
     static {
     	 
@@ -38,30 +42,74 @@ public class GStreamerBackend {
 
 	private SurfaceView surfaceView;
     
-    public GStreamerBackend (Context context, GStreamerListener gstListener, String uri, SurfaceView surfaceView) throws Exception {
+	/**
+	 * Instance a new Streaming object
+	 * @param context the application context
+	 * @param gstListener the Listener where to receive all notification from the Library
+	 * @param uri the uri of the stream
+	 * @param latency the preferred latency of the stream (in ms)
+	 * @param surfaceView the Surface where to render the stream
+	 * @throws Exception
+	 */
+    public GStreamerBackend (String streamName, Context context, GStreamerListener gstListener, String uri, int latency, SurfaceView surfaceView) throws Exception {
         
     	this.gstListener = gstListener;
     	GStreamer.init(context);
     	this.uri = uri;
+    	this.latency = latency;
+    	this.streamName = streamName;
     	this.surfaceView = surfaceView;
+    	this.surfaceView.getHolder().addCallback(this);
+    	
+    	this.init();
     }
 	
+    
+	private void init() {
+	   nativeInit(this.streamName, this.latency);
+	}
+	
+	
+    /**
+     * 
+     * @return the rendering Surface
+     */
     public SurfaceView getSurfaceView() {
     	return this.surfaceView;
     }
     
+    /**
+     * Play the stream
+     */
 	public void play() {
 		nativePlay();
 	}
 	
+	/**
+	 * pause the stream
+	 */
 	public void pause() {
 		nativePause();
 	}
 	
+	/**
+	 * Update the uri of the stream
+	 * @param uri the new uri
+	 */
 	public void setUri(String uri)
 	{
 		this.uri = uri;
 		nativeSetUri(this.uri);
+	}
+	
+	
+    /**
+     * Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
+     * @return the latency value in ms
+     */
+	public int getLatency()
+	{
+		return nativeGetLatency();
 	}
 	
 	public void finalizeLib() {
@@ -72,9 +120,6 @@ public class GStreamerBackend {
 		nativeFinalizeGlobals();
 	}
 	
-	public void init(String streamName) {
-	   nativeInit(streamName);
-	}
 	
 	public void surfaceInit(Surface surface) {
 		nativeSurfaceInit(surface);
@@ -109,6 +154,23 @@ public class GStreamerBackend {
     private void onMediaSizeChanged (int width, int height) {
         Log.i ("GStreamer", "Media size changed to " + width + "x" + height);
        gstListener.onMediaSizeChanged(this,width, height);
+    }
+    
+   
+	public void surfaceChanged(SurfaceHolder holder, int format, int width,
+            int height) {
+        Log.d("GStreamer", "Surface changed to format " + format + " width "
+                + width + " height " + height);
+        this.surfaceInit(holder.getSurface());
+    }
+
+    public void surfaceCreated(SurfaceHolder holder) {
+        Log.d("GStreamer", "Surface created: " + holder.getSurface());
+    }
+
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.d("GStreamer", "Surface destroyed");
+        this.surfaceFinalize();
     }
 }
 

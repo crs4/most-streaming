@@ -66,7 +66,7 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
         	 String uri = uriProps.getProperty("uri_1"); 
         	 String uri2 = uriProps.getProperty("uri_2"); 
         	 
-        	// Surface for the Stream 1
+        	 // Surface for the Stream 1
              SurfaceView sv = (SurfaceView) this.findViewById(R.id.surface_video);
              
              // Surface for the Stream 2
@@ -74,19 +74,10 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
             
         	 Log.d("DualStreaming","URI 1:" + uri + "URI 2:" + uri2);
         	 
-        	 gstInstance = new GStreamerBackend(this.getApplicationContext(), this, uri, sv);
-        	 gstInstance2 = new GStreamerBackend(this.getApplicationContext(), this, uri2, sv2);
+        	 gstInstance = new GStreamerBackend("Stream_1", this.getApplicationContext(), this, uri, 200, sv);
+        	 gstInstance2 = new GStreamerBackend("Stream_2", this.getApplicationContext(), this, uri2, 250, sv2);
         	 
         	 Log.d(TAG, "GStreamer Backend instances Ok. ");
-        	 
-        	 SurfaceHolder sh = sv.getHolder();
-             sh.addCallback(new SurfaceCallback(gstInstance));
-             
-              SurfaceHolder sh2 = sv2.getHolder();
-              sh2.addCallback(new SurfaceCallback(gstInstance2));
-             
-             Log.d(TAG, " SurfaceHolders callbacks added. ");
-             
              
         } catch (Exception e) {
         	Log.e(TAG, "Error initializing GStreamer: " + e.getMessage());
@@ -127,8 +118,6 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
         this.findViewById(R.id.button_play).setEnabled(false);
         this.findViewById(R.id.button_stop).setEnabled(false);
 
-        gstInstance.init("Stream_1");
-        gstInstance2.init("Stream_2");
     }
 
     protected void onSaveInstanceState (Bundle outState) {
@@ -157,7 +146,19 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
     // Called from native code. Native code calls this once it has created its pipeline and
     // the main loop is running, so it is ready to accept commands.
     public void onGStreamerInitialized (GStreamerBackend backend) {
-        Log.i ("GStreamer", "Gst initialized. Restoring state, playing:" + is_playing_desired);
+        Log.i (TAG, "Gst initialized. Restoring state, playing:" + is_playing_desired);
+        
+       
+        
+        if (backend==gstInstance)
+        {
+        	Log.i (TAG, "Current latency on Instance 1:" + backend.getLatency());
+        
+        }else if (backend==gstInstance2)
+            {
+            	Log.i (TAG, "Current latency on Instance 2:" + backend.getLatency());
+            }
+        
         // Restore previous playing state
         if (is_playing_desired) {
             gstInstance.play();

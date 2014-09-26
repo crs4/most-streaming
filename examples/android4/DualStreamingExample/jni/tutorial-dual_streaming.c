@@ -30,7 +30,8 @@ GST_DEBUG_CATEGORY_STATIC (debug_category);
 /* Structure to contain all our information, so we can pass it to callbacks */
 typedef struct _CustomData {
   jobject app;                  /* Application instance, used to call its methods. A global reference is kept. */
-  char* stream_name;           /* a name indicating the particular streaming instance */
+  const char* stream_name;           /* a name indicating the particular streaming instance */
+  gint latency;                 /* the latency of this stream */
   pthread_t gst_app_thread;     /* Thread where running a single pipeline */
   GstElement *pipeline;         /* The running pipeline */
   GMainContext *context;        /* GLib context used to run the main loop */
@@ -139,7 +140,7 @@ static gboolean refresh_ui (CustomData *data) {
   /* If we didn't know it yet, query the stream duration */
   if (!GST_CLOCK_TIME_IS_VALID (data->duration)) {
     if (!gst_element_query_duration (data->pipeline, GST_FORMAT_TIME, &data->duration)) {
-      GST_WARNING ("Could not query current duration");
+     // GST_WARNING ("Could not query current duration");
     }
   }
 
@@ -250,6 +251,41 @@ static void clock_lost_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
     gst_element_set_state (data->pipeline, GST_STATE_PAUSED);
     gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
   }
+}
+
+/* Called after the pipeline source has been created */
+static void playbinNotifySource(GObject *o, GstMessage *msg, CustomData *data) {
+
+		GST_DEBUG("Called playbinNotifySource");
+	    GstElement *source;
+	    g_object_get(o, "source", &source, NULL);
+        gint latency = data->latency;
+
+	    GValue val = G_VALUE_INIT;
+
+	    g_value_init (&val, G_TYPE_INT);
+	    g_value_set_int (&val, latency);
+	    g_object_set_property(source, "latency", &val);
+	    GST_DEBUG("Source Latency Property set to: %d for stream:%s" , latency, data->stream_name);
+
+	    // TEST (check if the new value has been successfully updated
+
+	    GValue currentLatencyVal = G_VALUE_INIT;
+
+		g_value_init (&currentLatencyVal, G_TYPE_INT);
+
+		g_object_get_property(source, "latency", &currentLatencyVal);
+		int latencyInt = g_value_get_int(&currentLatencyVal);
+		GST_DEBUG("Source Latency Property Get VALUE: %d for Stream: %s" , latencyInt, data->stream_name );
+	    //
+
+		if (latencyInt-data->latency==0)
+		 GST_DEBUG("Data Latency successfully updates");
+		else
+		{
+		GST_ERROR("Problems updating the latency: current value: %d Expected: %d" ,   latencyInt ,data->latency);
+		data->latency = latencyInt;
+		}
 }
 
 /* Retrieve the video sink's Caps and tell the application about the media size */
@@ -442,6 +478,9 @@ static void *app_function (void *userdata) {
   g_signal_connect (G_OBJECT (bus), "message::duration", (GCallback)duration_cb, data);
   g_signal_connect (G_OBJECT (bus), "message::buffering", (GCallback)buffering_cb, data);
   g_signal_connect (G_OBJECT (bus), "message::clock-lost", (GCallback)clock_lost_cb, data);
+
+  // connect to pipeline for setting varoius properties
+  g_signal_connect (G_OBJECT (data->pipeline),"source-setup", (GCallback) playbinNotifySource, data);
   gst_object_unref (bus);
 
   /* Register a function that GLib will call 4 times per second */
@@ -453,7 +492,10 @@ static void *app_function (void *userdata) {
   /* Create a GLib Main Loop and set it to run */
   GST_DEBUG ("Entering main loop... (CustomData:%p)", data);
   data->main_loop = g_main_loop_new (data->context, FALSE);
+
+  // Check for initialization Completed
   check_initialization_complete (data);
+
   g_main_loop_run (data->main_loop);
   GST_DEBUG ("Exited main loop");
   g_main_loop_unref (data->main_loop);
@@ -474,13 +516,17 @@ static void *app_function (void *userdata) {
  */
 
 /* Instruct the native code to create its internal data structure, pipeline and thread */
-static void gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name) {
+static void gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name, jint latency) {
   CustomData *data = g_new0 (CustomData, 1);
   data->desired_position = GST_CLOCK_TIME_NONE;
   data->last_seek_time = GST_CLOCK_TIME_NONE;
 
   data->stream_name =  (*env)->GetStringUTFChars(env, stream_name  , 0);
+  GST_DEBUG("Assigned Stream name:%s" , data->stream_name);
+  data->latency = (gint) latency;
 
+  //(*env)->ReleaseStringUTFChars(env, stream_name, data->stream_name);
+  //GST_DEBUG("Assigned Stream name (AFTER RELEASE):%s" , data->stream_name);
   SET_CUSTOM_DATA (env, thiz, custom_data_field_id, data);
   GST_DEBUG_CATEGORY_INIT (debug_category, "most_dual_streaming", 0, "Android dual streming");
   gst_debug_set_threshold_for_name("most_dual_streaming", GST_LEVEL_DEBUG);
@@ -532,7 +578,7 @@ static void gst_native_finalize_globals (JNIEnv* env, jobject thiz)
 }
 
 /* Set playbin's URI */
-void gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
+static void gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
    GST_DEBUG ("called gst_native_set_uri!!!!");
 
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
@@ -546,7 +592,7 @@ void gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
   GST_DEBUG ("Setting URI:::: %s" , char_uri);
 
 
-  GST_DEBUG ("STream name is:%s", data->stream_name);
+  GST_DEBUG ("Stream name is:%s", data->stream_name);
 
   if (data->target_state >= GST_STATE_READY)
     gst_element_set_state (data->pipeline, GST_STATE_READY);
@@ -558,6 +604,54 @@ void gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
   data->duration = GST_CLOCK_TIME_NONE;
   data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
 }
+
+
+/* Get playbin's current LATENCY */
+static jint gst_native_get_latency (JNIEnv* env, jobject thiz) {
+	CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+	  if (!data || !data->pipeline)
+		  {
+		  GST_DEBUG ("Custom data not defined!");
+		  return -1;
+		  }
+
+	return data->latency;
+}
+
+/* Set playbin's LATENCY */
+/*
+static void gst_native_set_latency (JNIEnv* env, jobject thiz, jint jlatency) {
+   GST_DEBUG ("called gst_native_set_latency!!!!");
+
+  CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+  if (!data || !data->pipeline)
+	  {
+	  GST_DEBUG ("Custom data not defined!");
+	  return;
+	  }
+
+
+  if (data->target_state >= GST_STATE_READY)
+    gst_element_set_state (data->pipeline, GST_STATE_READY);
+
+  	GstElement *source;
+  	   // Errore!!! data->pipeline non e' un GstPlayBin e quindi non ha la property source!!
+ 	    g_object_get(data->pipeline, "source", &source, NULL);
+
+
+         gint latency = (gint) jlatency;
+
+  	  	 GValue val = G_VALUE_INIT;
+
+  	    g_value_init (&val, G_TYPE_INT);
+  	    g_value_set_int (&val, (int) latency);
+  	    g_object_set_property(source, "latency", &val);
+  	    GST_DEBUG("Source Latency Property set to: %d for Stream: %s" , latency, data->stream_name );
+
+  data->duration = GST_CLOCK_TIME_NONE;
+  data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+}
+*/
 
 /* Set pipeline to PLAYING state */
 static void gst_native_play (JNIEnv* env, jobject thiz) {
@@ -655,9 +749,11 @@ static void gst_native_surface_finalize (JNIEnv *env, jobject thiz) {
 
 /* List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-  { "nativeInit", "(Ljava/lang/String;)V", (void *) gst_native_init},
+  { "nativeInit", "(Ljava/lang/String;I)V", (void *) gst_native_init},
   { "nativeFinalize", "()V", (void *) gst_native_finalize},
   { "nativeFinalizeGlobals", "()V", (void *) gst_native_finalize_globals},
+ // { "nativeSetLatency", "(I)V", (void *) gst_native_set_latency},
+  { "nativeGetLatency", "()I", (void *) gst_native_get_latency},
   { "nativeSetUri", "(Ljava/lang/String;)V", (void *) gst_native_set_uri},
   { "nativePlay", "()V", (void *) gst_native_play},
   { "nativePause", "()V", (void *) gst_native_pause},
