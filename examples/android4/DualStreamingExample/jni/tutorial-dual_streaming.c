@@ -1,3 +1,13 @@
+/*!
+ * Project MOST - Moving Outcomes to Standard Telemedicine Practice
+ * http://most.crs4.it/
+ *
+ * Copyright 2014, CRS4 srl. (http://www.crs4.it/)
+ * Dual licensed under the MIT or GPL Version 2 licenses.
+ * See license-GPLv2.txt or license-MIT.txt
+ */
+
+
 #include <string.h>
 #include <stdint.h>
 #include <jni.h>
@@ -323,72 +333,6 @@ static void check_media_size (CustomData *data) {
 }
 
 
-/* Retrieve the video sink's Caps and tell the application about the media size */
-static void check_media_size_OLD (CustomData *data) {
-  JNIEnv *env = get_jni_env ();
-  GstElement *video_sink;
-  GstPad *video_sink_pad;
-  GstCaps *caps;
-  GstStructure *structure; // ADDED ...see  https://gitorious.org/vaapi/sree-gstreamer-vaapi/commit/40ac87b45e721b9141b183cfc682b1ccbabf3087
-  GstVideoFormat fmt;
-  int width;
-  int height;
-
-  /* Retrieve the Caps at the entrance of the video sink */
-  g_object_get (data->pipeline, "video-sink", &video_sink, NULL);
-  video_sink_pad = gst_element_get_static_pad (video_sink, "sink");
-
- //caps = gst_pad_get_negotiated_caps (video_sink_pad); // deprecated
-  GST_DEBUG ("prima di  gst_pad_get_current_caps!" );
-  caps =  gst_pad_get_current_caps (video_sink_pad);
-  // see http://cgit.freedesktop.org/gstreamer/gstreamer/tree/docs/random/porting-to-1.0.txt
-  GST_DEBUG ("prima di  GstVideoInfo!" );
-  GstVideoInfo  videoInfo;
-  /*
-  GST_DEBUG ("prima di  allocare width in GstVideoInfo!" );
-  videoInfo->width = width;
-  GST_DEBUG ("prima di  allocare height in GstVideoInfo!" );
-  videoInfo->height = height;
-  GST_DEBUG ("prima di  GstVideoFormatInfo!" );
-  GstVideoFormatInfo * formatInfo;
-  formatInfo->format = fmt;
-
-  videoInfo -> finfo = formatInfo;
-  */
-
-  GST_DEBUG ("prima di gst_video_info_from_caps!" );
-  if (gst_video_info_from_caps(&videoInfo, caps))
- // if (gst_video_format_parse_caps(caps, &fmt, &width, &height)) // deprecated
-
-  {
-	  GST_DEBUG ("CALLED check_media_size!!!" );
-
-
-	  structure = gst_caps_get_structure(caps, 0);
-	  gst_structure_get_int(structure, "width", &width);
-	  gst_structure_get_int(structure, "height", &height);
-
-    /* [[TO DO]]
-	int par_n, par_d;
-
-    if (gst_video_parse_caps_pixel_aspect_ratio (caps, &par_n, &par_d)) {
-      width = width * par_n / par_d;
-    }
-    */
-    GST_DEBUG ("Media size is %dx%d, notifying application", width, height);
-
-    (*env)->CallVoidMethod (env, data->app, on_media_size_changed_method_id, (jint)width, (jint)height);
-    if ((*env)->ExceptionCheck (env)) {
-      GST_ERROR ("Failed to call Java method");
-      (*env)->ExceptionClear (env);
-    }
-  }
-
-  gst_caps_unref(caps);
-  gst_object_unref (video_sink_pad);
-  gst_object_unref(video_sink);
-}
-
 /* Notify UI about pipeline state changes */
 static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   GstState old_state, new_state, pending_state;
@@ -531,16 +475,7 @@ static void gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name, jin
   GST_DEBUG_CATEGORY_INIT (debug_category, "most_dual_streaming", 0, "Android dual streming");
   gst_debug_set_threshold_for_name("most_dual_streaming", GST_LEVEL_DEBUG);
   GST_DEBUG ("Created CustomData at %p", data);
-/*
-  if (!global_app)
-  {
-	  GST_DEBUG ("Global App not defined... defining it...");
-	  global_app = (*env)->NewGlobalRef (env, thiz);
-  }
-  else {
-	  GST_DEBUG ("Global App ALREADY defined");
-  }
- */
+
   data->app =  (*env)->NewGlobalRef (env, thiz);
   GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
   pthread_create (&data->gst_app_thread, NULL, &app_function, data);
@@ -554,12 +489,7 @@ static void gst_native_finalize (JNIEnv* env, jobject thiz) {
   g_main_loop_quit (data->main_loop);
   GST_DEBUG ("Waiting for thread to finish...");
   pthread_join (data->gst_app_thread, NULL);
-  //GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
-  //(*env)->DeleteGlobalRef (env, data->app);
-  //GST_DEBUG ("Freeing CustomData at %p", data);
-  //g_free (data);
-  //SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
-  //GST_DEBUG ("Done finalizing");
+
 }
 
 /*  free global resources */
@@ -618,40 +548,6 @@ static jint gst_native_get_latency (JNIEnv* env, jobject thiz) {
 	return data->latency;
 }
 
-/* Set playbin's LATENCY */
-/*
-static void gst_native_set_latency (JNIEnv* env, jobject thiz, jint jlatency) {
-   GST_DEBUG ("called gst_native_set_latency!!!!");
-
-  CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-  if (!data || !data->pipeline)
-	  {
-	  GST_DEBUG ("Custom data not defined!");
-	  return;
-	  }
-
-
-  if (data->target_state >= GST_STATE_READY)
-    gst_element_set_state (data->pipeline, GST_STATE_READY);
-
-  	GstElement *source;
-  	   // Errore!!! data->pipeline non e' un GstPlayBin e quindi non ha la property source!!
- 	    g_object_get(data->pipeline, "source", &source, NULL);
-
-
-         gint latency = (gint) jlatency;
-
-  	  	 GValue val = G_VALUE_INIT;
-
-  	    g_value_init (&val, G_TYPE_INT);
-  	    g_value_set_int (&val, (int) latency);
-  	    g_object_set_property(source, "latency", &val);
-  	    GST_DEBUG("Source Latency Property set to: %d for Stream: %s" , latency, data->stream_name );
-
-  data->duration = GST_CLOCK_TIME_NONE;
-  data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
-}
-*/
 
 /* Set pipeline to PLAYING state */
 static void gst_native_play (JNIEnv* env, jobject thiz) {
@@ -752,7 +648,6 @@ static JNINativeMethod native_methods[] = {
   { "nativeInit", "(Ljava/lang/String;I)V", (void *) gst_native_init},
   { "nativeFinalize", "()V", (void *) gst_native_finalize},
   { "nativeFinalizeGlobals", "()V", (void *) gst_native_finalize_globals},
- // { "nativeSetLatency", "(I)V", (void *) gst_native_set_latency},
   { "nativeGetLatency", "()I", (void *) gst_native_get_latency},
   { "nativeSetUri", "(Ljava/lang/String;)V", (void *) gst_native_set_uri},
   { "nativePlay", "()V", (void *) gst_native_play},

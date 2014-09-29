@@ -1,3 +1,11 @@
+/*!
+ * Project MOST - Moving Outcomes to Standard Telemedicine Practice
+ * http://most.crs4.it/
+ *
+ * Copyright 2014, CRS4 srl. (http://www.crs4.it/)
+ * Dual licensed under the MIT or GPL Version 2 licenses.
+ * See license-GPLv2.txt or license-MIT.txt
+ */
 
 package most.streaming.example;
 
@@ -10,7 +18,6 @@ import android.app.Activity;
 import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -74,13 +81,19 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
             
         	 Log.d("DualStreaming","URI 1:" + uri + "URI 2:" + uri2);
         	 
+        	 // Each GStreamerBackend instance handles a video stream
+        	 
+        	 // First stream
         	 gstInstance = new GStreamerBackend("Stream_1", this.getApplicationContext(), this, uri, 200, sv);
+        	 
+        	 // Second stream
+        	 
         	 gstInstance2 = new GStreamerBackend("Stream_2", this.getApplicationContext(), this, uri2, 250, sv2);
         	 
-        	 Log.d(TAG, "GStreamer Backend instances Ok. ");
+        	 Log.d(TAG, "GStreamer Backends instanced. ");
              
         } catch (Exception e) {
-        	Log.e(TAG, "Error initializing GStreamer: " + e.getMessage());
+        	Log.e(TAG, "Error initializing GStreamer Backend: " + e.getMessage());
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             finish(); 
             return;
@@ -127,8 +140,14 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
 
     protected void onDestroy() {
     	Log.d(TAG, "CALLED ON DESTROY!");
+    	
+    	// finalize native resource of the first stream
     	gstInstance.finalizeLib();
+    	
+    	// finalize native resource of the second stream
     	gstInstance2.finalizeLib();
+    	
+    	// finalize global references of the native gstreamer library
         gstInstance.finalizeGlobals();
         super.onDestroy();
     }
@@ -149,13 +168,14 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
         Log.i (TAG, "Gst initialized. Restoring state, playing:" + is_playing_desired);
         
        
-        
         if (backend==gstInstance)
         {
+        	// Just for testing, we invoke the native method to get the current latency of the first stream
         	Log.i (TAG, "Current latency on Instance 1:" + backend.getLatency());
         
         }else if (backend==gstInstance2)
             {
+        	  // Just for testing, we invoke the native method to get the current latency of the second  stream
             	Log.i (TAG, "Current latency on Instance 2:" + backend.getLatency());
             }
         
@@ -177,6 +197,8 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
             }
         });
     }
+    
+    
 	@Override
 	public void onMediaSizeChanged(GStreamerBackend gStreamerBackend,
 			int width, int height) {
