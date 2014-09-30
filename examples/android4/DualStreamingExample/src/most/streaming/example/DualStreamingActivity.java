@@ -148,7 +148,7 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
     	gstInstance2.finalizeLib();
     	
     	// finalize global references of the native gstreamer library
-        gstInstance.finalizeGlobals();
+        //gstInstance.finalizeGlobals();
         super.onDestroy();
     }
 

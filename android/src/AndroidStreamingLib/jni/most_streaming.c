@@ -72,6 +72,7 @@ static jmethodID set_current_position_method_id;
 static jmethodID on_gstreamer_initialized_method_id;
 static jmethodID on_media_size_changed_method_id;
 
+static int streams_count = 0; // Streams reference counter used to finalize global references when all streams ha been deallocated
 
 //static jobject global_app;                  /* Application instance, used to call its methods. A global reference is kept. */
 /*
@@ -359,6 +360,9 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 /* Check if all conditions are met to report GStreamer as initialized.
  * These conditions will change depending on the application */
 static void check_initialization_complete (CustomData *data) {
+
+ GST_DEBUG ("CALLED CHECK_INITIALIZATION_COMPLETE");
+
   JNIEnv *env = get_jni_env ();
   if (!data->initialized && data->native_window && data->main_loop) {
     GST_DEBUG ("Initialization complete, notifying application. native_window:%p main_loop:%p", data->native_window, data->main_loop);
@@ -373,6 +377,7 @@ static void check_initialization_complete (CustomData *data) {
     }
     data->initialized = TRUE;
   }
+
 }
 
 /* Main method for the native code. This is executed on its own thread. */
@@ -479,6 +484,9 @@ static void gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name, jin
   data->app =  (*env)->NewGlobalRef (env, thiz);
   GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
   pthread_create (&data->gst_app_thread, NULL, &app_function, data);
+
+  streams_count++;
+  GST_DEBUG ("STREAM_COUNT: %d " , streams_count);
 }
 
 /* Quit the main loop, remove the native thread and free resources */
@@ -489,14 +497,15 @@ static void gst_native_finalize (JNIEnv* env, jobject thiz) {
   g_main_loop_quit (data->main_loop);
   GST_DEBUG ("Waiting for thread to finish...");
   pthread_join (data->gst_app_thread, NULL);
+  streams_count--;
+  GST_DEBUG ("STREAM COUNT: %d " , streams_count);
 
-}
-
-/*  free global resources */
-static void gst_native_finalize_globals (JNIEnv* env, jobject thiz)
-{
-	 GST_DEBUG ("IN  gst_native_finalize_globals ");
-	CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+  if (streams_count<=0)
+  {
+	  GST_DEBUG ("STREAM_COUNT: Deallocate global variables!! ");
+	  streams_count = 0;
+	  GST_DEBUG ("IN gst_native_finalize_globals ");
+	  CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
 	  if (!data) return;
 	  GST_DEBUG ("Deleting GlobalRef for app object at %p", data->app);
 	 (*env)->DeleteGlobalRef (env, data->app);
@@ -505,7 +514,10 @@ static void gst_native_finalize_globals (JNIEnv* env, jobject thiz)
 	 SET_CUSTOM_DATA (env, thiz, custom_data_field_id, NULL);
 	 //global_app = NULL;
 	 GST_DEBUG ("Done finalizing");
+  }
+
 }
+
 
 /* Set playbin's URI */
 static void gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
@@ -647,7 +659,6 @@ static void gst_native_surface_finalize (JNIEnv *env, jobject thiz) {
 static JNINativeMethod native_methods[] = {
   { "nativeInit", "(Ljava/lang/String;I)V", (void *) gst_native_init},
   { "nativeFinalize", "()V", (void *) gst_native_finalize},
-  { "nativeFinalizeGlobals", "()V", (void *) gst_native_finalize_globals},
   { "nativeGetLatency", "()I", (void *) gst_native_get_latency},
   { "nativeSetUri", "(Ljava/lang/String;)V", (void *) gst_native_set_uri},
   { "nativePlay", "()V", (void *) gst_native_play},

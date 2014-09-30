@@ -8,7 +8,7 @@
  */
 
 
-package most.streaming.api;
+package org.crs4.most.streaming;
 
 
 import com.gstreamer.GStreamer;
@@ -21,12 +21,11 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 
-public class GStreamerBackend implements SurfaceHolder.Callback {
+public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
 	
     private native void nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
-    private native void nativeFinalizeGlobals(); // Destroy the global gstreamer references
     private native void nativeSetUri(String uri); // Set the URI of the media to play
     private native int nativeGetLatency(); // Get the latency of the stream to play
     private native void nativePlay();     // Set pipeline to PLAYING
@@ -37,6 +36,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
     private native void nativeSurfaceFinalize(); // Surface about to be destroyed
     private long native_custom_data;      // Native code will use this to keep private data
     
+    private Context context = null;
     private String uri = null;
     private String streamName = null;
     private int latency = 200;
@@ -49,7 +49,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
         nativeClassInit();
     }
     
-    private GStreamerListener gstListener = null;
+    private StreamListener gstListener = null;
 
 	private SurfaceView surfaceView;
     
@@ -62,22 +62,24 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
 	 * @param surfaceView the Surface where to render the stream
 	 * @throws Exception
 	 */
-    public GStreamerBackend (String streamName, Context context, GStreamerListener gstListener, String uri, int latency, SurfaceView surfaceView) throws Exception {
+    public GStreamerBackend (String streamName, Context context, StreamListener gstListener, String uri, int latency, SurfaceView surfaceView) {
         
+    	this.streamName = streamName;
+    	this.context = context;
     	this.gstListener = gstListener;
-    	GStreamer.init(context);
+    	
     	this.uri = uri;
     	this.latency = latency;
-    	this.streamName = streamName;
+    	
     	this.surfaceView = surfaceView;
     	this.surfaceView.getHolder().addCallback(this);
-    	
-    	this.init();
+ 
     }
 	
     
-	private void init() {
-	   nativeInit(this.streamName, this.latency);
+	public void prepare() throws Exception {
+	GStreamer.init(this.context);
+	nativeInit(this.streamName, this.latency);
 	}
 	
 	
@@ -118,20 +120,19 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
      * Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
      * @return the latency value in ms
      */
+	@Override
 	public int getLatency()
 	{
 		return nativeGetLatency();
 	}
 	
-	public void finalizeLib() {
+	
+	@Override
+	public void destroy() {
 		nativeFinalize();
 	}
-	
-	public void finalizeGlobals() {
-		nativeFinalizeGlobals();
-	}
-	
-	
+
+
 	public void surfaceInit(Surface surface) {
 		nativeSurfaceInit(surface);
 	}
@@ -144,14 +145,14 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
     private void setMessage(final String message)
     {
     	//Log.d("GSTREAMER_BACKEND", "Message from Gstreamer:" + message);
-    	this.gstListener.setMessage(this,"From Backend:" + message);
+    	this.gstListener.onMessageReceived(this,"From Backend:" + message);
     }
     
     // Called from native code
     private void onGStreamerInitialized()
     {   
     	nativeSetUri(this.uri);
-    	gstListener.onGStreamerInitialized(this);
+    	gstListener.onStreamInitialized(this);
     }
     
      // Called from native code
@@ -183,6 +184,14 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
         Log.d("GStreamer", "Surface destroyed");
         this.surfaceFinalize();
     }
+    
+
+	@Override
+	public String getName() {
+		
+		return this.streamName;
+	}
+	 
 }
 
 

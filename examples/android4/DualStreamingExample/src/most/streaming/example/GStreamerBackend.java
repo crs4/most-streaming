@@ -26,7 +26,6 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
 	
     private native void nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
-    private native void nativeFinalizeGlobals(); // Destroy the global gstreamer references
     private native void nativeSetUri(String uri); // Set the URI of the media to play
     private native int nativeGetLatency(); // Get the latency of the stream to play
     private native void nativePlay();     // Set pipeline to PLAYING
@@ -123,14 +122,12 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
 		return nativeGetLatency();
 	}
 	
+	/** 
+	 * Finalize the GStreamer resources related to this specific stream
+	 */
 	public void finalizeLib() {
 		nativeFinalize();
 	}
-	
-	public void finalizeGlobals() {
-		nativeFinalizeGlobals();
-	}
-	
 	
 	public void surfaceInit(Surface surface) {
 		nativeSurfaceInit(surface);

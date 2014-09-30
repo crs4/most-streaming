@@ -7,7 +7,7 @@
  * See license-GPLv2.txt or license-MIT.txt
  */
 
-package most.streaming.api;
+package org.crs4.most.streaming;
 
 import android.content.Context;
 import android.util.AttributeSet;
