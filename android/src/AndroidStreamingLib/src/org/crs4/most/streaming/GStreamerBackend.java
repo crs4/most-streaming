@@ -11,10 +11,13 @@
 package org.crs4.most.streaming;
 
 
+import java.util.HashMap;
+
 import com.gstreamer.GStreamer;
 
 import android.content.Context;
 
+import android.os.Handler;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -23,7 +26,7 @@ import android.view.SurfaceView;
 
 public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
-	
+	// native methods
     private native void nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
     private native void nativeSetUri(String uri); // Set the URI of the media to play
@@ -36,10 +39,16 @@ public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     private native void nativeSurfaceFinalize(); // Surface about to be destroyed
     private long native_custom_data;      // Native code will use this to keep private data
     
+    
+    // local fields
     private Context context = null;
+    private Handler notificationHandler = null;
+	private SurfaceView surfaceView;
+    
     private String uri = null;
     private String streamName = null;
     private int latency = 200;
+    
     
     static {
     	 
@@ -49,35 +58,28 @@ public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
         nativeClassInit();
     }
     
-    private StreamListener gstListener = null;
-
-	private SurfaceView surfaceView;
     
-	/**
-	 * Instance a new Streaming object
-	 * @param context the application context
-	 * @param gstListener the Listener where to receive all notification from the Library
-	 * @param uri the uri of the stream
-	 * @param latency the preferred latency of the stream (in ms)
-	 * @param surfaceView the Surface where to render the stream
-	 * @throws Exception
-	 */
-    public GStreamerBackend (String streamName, Context context, StreamListener gstListener, String uri, int latency, SurfaceView surfaceView) {
-        
-    	this.streamName = streamName;
+    @Override
+	public void prepare(Context context, SurfaceView surface,
+			HashMap<String, String> configParams, Handler notificationHandler)  
+			throws Exception {
+	
     	this.context = context;
-    	this.gstListener = gstListener;
     	
-    	this.uri = uri;
-    	this.latency = latency;
+    	this.streamName =   configParams.get("name");
+    	this.uri = configParams.get("uri");
+    	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
+    	
+    	this.notificationHandler = notificationHandler;
     	
     	this.surfaceView = surfaceView;
     	this.surfaceView.getHolder().addCallback(this);
- 
-    }
-	
+    	
+    	this.initLib();
+    	
+	}
     
-	public void prepare() throws Exception {
+	private void initLib() throws Exception {
 	GStreamer.init(this.context);
 	nativeInit(this.streamName, this.latency);
 	}
@@ -144,15 +146,16 @@ public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	 // Called from native code
     private void setMessage(final String message)
     {
-    	//Log.d("GSTREAMER_BACKEND", "Message from Gstreamer:" + message);
-    	this.gstListener.onMessageReceived(this,"From Backend:" + message);
+    	Log.d("GSTREAMER_BACKEND", "Message from Gstreamer:" + message);
+    	//this.gstListener.onMessageReceived(this,"From Backend:" + message);
     }
     
     // Called from native code
     private void onGStreamerInitialized()
     {   
     	nativeSetUri(this.uri);
-    	gstListener.onStreamInitialized(this);
+    	Log.d("GSTREAMER_BACKEND", "Stream initialized");
+    	//gstListener.onStreamInitialized(this);
     }
     
      // Called from native code
@@ -165,7 +168,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     // Inform the video surface about the new size and recalculate the layout.
     private void onMediaSizeChanged (int width, int height) {
         Log.i ("GStreamer", "Media size changed to " + width + "x" + height);
-       gstListener.onMediaSizeChanged(this,width, height);
+       //gstListener.onMediaSizeChanged(this,width, height);
     }
     
    
@@ -191,6 +194,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		
 		return this.streamName;
 	}
+	
 	 
 }
 
