@@ -7,9 +7,11 @@ import android.content.Intent;
 import android.os.*;
 import android.test.ActivityUnitTestCase;
 import android.util.Log;
+import android.view.SurfaceView;
 
 import org.crs4.most.streaming.IStream;
 import org.crs4.most.streaming.StreamingEventBundle;
+import org.crs4.most.streaming.StreamingFactory;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.test_activity.TestActivity;
 
@@ -25,8 +27,7 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 		super.setUp();
 		// Starts the MainActivity of the target application
 		startActivity(new Intent(getInstrumentation().getTargetContext(), TestActivity.class), null, null);	
-		this.myStream = new MockStreamingLib();
-		this.configParams = new HashMap<String, String>();
+		
 	}
 
 	protected void tearDown() throws Exception {
@@ -54,6 +55,10 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 					
 					StreamingEvent.LIB_INITIALIZING , 
 					StreamingEvent.LIB_INITIALIZED , 
+					StreamingEvent.STREAM_INITIALIZING,
+					StreamingEvent.STREAM_INITIALIZED,
+					StreamingEvent.STREAM_DEINITIALIZING,
+					StreamingEvent.STREAM_DEINITIALIZED,
 					StreamingEvent.LIB_DEINITIALIZING,
 					StreamingEvent.LIB_DEINITIALIZED};
 		}
@@ -66,10 +71,9 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 			String infoMsg = myEvent.getEvent() + ":" + myEvent.getInfo();
 			Log.d(TAG, "handleMessage: Current Event:" + infoMsg);
 			
-			assertEquals( myEvent.getEvent(), expectedEvents[curEventIndex]);
+			assertEquals( expectedEvents[curEventIndex], myEvent.getEvent());
 			curEventIndex++;
 			     if (myEvent.getEvent()==StreamingEvent.LIB_INITIALIZED)   myStream.destroy();	
-			
 			return false;
 		}
 
@@ -104,6 +108,7 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 			     if (myEvent.getEvent()==StreamingEvent.STREAM_INITIALIZED)   myStream.play();
 			     else if (myEvent.getEvent()==StreamingEvent.STREAM_PLAYING)   myStream.pause();
 			     else if (myEvent.getEvent()==StreamingEvent.STREAM_PAUSED)   myStream.destroy();
+			     
 			return false;
 		}
 
@@ -116,6 +121,11 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 	public void testStreamingLibInitialization()
 	{
 		Log.d(TAG, "Testing testStreamingLibInitialization...");
+		
+		this.myStream = new MockStreamingLib();
+		//this.myStream = StreamingFactory.getIStream();
+		
+		this.configParams = new HashMap<String, String>();
 		this._testHandler(new StreamingLibInitializationHandlerTest());
 	}
 	
@@ -131,7 +141,7 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 		this.configParams.put("name", "Stream 1 [Test]");
 		this.configParams.put("uri", "rtp://0.0.0.0:1234/test [Test]");
 	    try {
-			myStream.prepare(null, null,configParams , handler);
+			myStream.prepare(getActivity().getApplicationContext(), new SurfaceView(getActivity().getApplicationContext()),configParams , handler);
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

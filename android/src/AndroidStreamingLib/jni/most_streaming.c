@@ -465,7 +465,7 @@ static void *app_function (void *userdata) {
  */
 
 /* Instruct the native code to create its internal data structure, pipeline and thread */
-static void gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name, jint latency) {
+static jboolean gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name, jint latency) {
   CustomData *data = g_new0 (CustomData, 1);
   data->desired_position = GST_CLOCK_TIME_NONE;
   data->last_seek_time = GST_CLOCK_TIME_NONE;
@@ -487,6 +487,8 @@ static void gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name, jin
 
   streams_count++;
   GST_DEBUG ("STREAM_COUNT: %d " , streams_count);
+
+  return JNI_TRUE;
 }
 
 /* Quit the main loop, remove the native thread and free resources */
@@ -610,7 +612,7 @@ static jboolean gst_native_class_init (JNIEnv* env, jclass klass) {
   }
   else
   {
-	  __android_log_print (ANDROID_LOG_ERROR, "most_dual_streaming", "The calling class does implements all necessary interface methods. Ok");
+	  __android_log_print (ANDROID_LOG_INFO, "most_dual_streaming", "The calling class does implement all necessary interface methods. Ok");
   }
   return JNI_TRUE;
 }
@@ -657,7 +659,7 @@ static void gst_native_surface_finalize (JNIEnv *env, jobject thiz) {
 
 /* List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-  { "nativeInit", "(Ljava/lang/String;I)V", (void *) gst_native_init},
+  { "nativeInit", "(Ljava/lang/String;I)Z", (void *) gst_native_init},
   { "nativeFinalize", "()V", (void *) gst_native_finalize},
   { "nativeGetLatency", "()I", (void *) gst_native_get_latency},
   { "nativeSetUri", "(Ljava/lang/String;)V", (void *) gst_native_set_uri},
@@ -679,7 +681,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     __android_log_print (ANDROID_LOG_ERROR, "most_dual_streaming", "Could not retrieve JNIEnv");
     return 0;
   }
-  jclass klass = (*env)->FindClass (env, "most/streaming/example/GStreamerBackend");
+  jclass klass = (*env)->FindClass (env, "org/crs4/most/streaming/GStreamerBackend");
   (*env)->RegisterNatives (env, klass, native_methods, G_N_ELEMENTS(native_methods));
 
   pthread_key_create (&current_jni_env, detach_current_thread);

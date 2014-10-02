@@ -13,21 +13,26 @@ package org.crs4.most.streaming;
 
 import java.util.HashMap;
 
+import org.crs4.most.streaming.enums.StreamingEvent;
+import org.crs4.most.streaming.enums.StreamingEventType;
+
 import com.gstreamer.GStreamer;
 
 import android.content.Context;
 
 import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 
-public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
+//  the scope of this class is reserved to this current package. Don't instance this class, but use the StreamingFactory.getStream() method instead.
+class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
 	// native methods
-    private native void nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
+    private native boolean nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
     private native void nativeSetUri(String uri); // Set the URI of the media to play
     private native int nativeGetLatency(); // Get the latency of the stream to play
@@ -39,7 +44,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     private native void nativeSurfaceFinalize(); // Surface about to be destroyed
     private long native_custom_data;      // Native code will use this to keep private data
     
-    
+    private static final String TAG = "GSTREAMER_BACKEND";
     // local fields
     private Context context = null;
     private Handler notificationHandler = null;
@@ -48,40 +53,91 @@ public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     private String uri = null;
     private String streamName = null;
     private int latency = 200;
-    
+    private static boolean lib_initialized = false;
     
     static {
-    	 
+    	
+     Log.d(TAG,"Loading native libraries...corretta?");
+     
+     Log.d(TAG,"Loading gstreamer_android...");
      System.loadLibrary("gstreamer_android");
+     
+     Log.d(TAG,"Loading most_streaming...");
      System.loadLibrary("most_streaming");
-      
-        nativeClassInit();
+     Log.d(TAG,"Libraries loaded.");
+    
+     Log.d(TAG,"Loading native class and methods references...");
+     lib_initialized = nativeClassInit();
     }
     
+    public GStreamerBackend()
+    {
+    	Log.d((TAG), "GStreamerBackend instance...");
+    }
+    
+    private void notifyState(StreamingEventBundle myStateBundle)
+    {
+    	Message m = Message.obtain(this.notificationHandler,myStateBundle.getEventType().ordinal(), myStateBundle);
+		m.sendToTarget();
+    }
     
     @Override
 	public void prepare(Context context, SurfaceView surface,
 			HashMap<String, String> configParams, Handler notificationHandler)  
 			throws Exception {
-	
-    	this.context = context;
+	    
+    	if (!lib_initialized) throw new Exception("Error initilializing the native library.");
     	
-    	this.streamName =   configParams.get("name");
+    	if (context==null) throw new IllegalArgumentException("Context parameter cannot be null");
+    	if (notificationHandler==null) throw new IllegalArgumentException("Handler parameter cannot be null");
+    	if (surface==null) throw new IllegalArgumentException("Surface parameter cannot be null");
+    	if  (!configParams.containsKey("name")) throw new IllegalArgumentException("param name not found in configParams");
+		if (!configParams.containsKey("uri"))  throw new IllegalArgumentException("param uri not found in configParams ");
+		
+		this.notificationHandler = notificationHandler;
+		this.streamName =   configParams.get("name");
     	this.uri = configParams.get("uri");
     	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
     	
     	this.notificationHandler = notificationHandler;
     	
+		
+		this.context = context;
+    	this.streamName =   configParams.get("name");
+    	this.uri = configParams.get("uri");
+    	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
+    	
+    	
     	this.surfaceView = surface;
     	this.surfaceView.getHolder().addCallback(this);
-    	
+    
     	this.initLib();
-    	
+    	this.initStream();
 	}
     
-	private void initLib() throws Exception {
-	GStreamer.init(this.context);
-	nativeInit(this.streamName, this.latency);
+    private void initStream() {
+    	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZING, "Inizializating Stremm " + this.streamName, this.streamName));
+    	
+    	boolean stream_initialized = nativeInit(this.streamName, this.latency);
+    	if (stream_initialized)
+    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZED, "Stremm " + this.streamName + " initialized", this.streamName));
+    	else
+    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZATION_FAILED, "Stremm initialization failed:" + this.streamName + " initialized", this.streamName));
+    	
+    }
+    
+	private void initLib() {
+	this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZING, "Inizializating Streaming Lib for stremm " + this.streamName, this.streamName));
+	try {
+		GStreamer.init(this.context);
+		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZED, "GStreamer Lib successfully initialized: for stream " + this.streamName, this.streamName));
+	} catch (Exception e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+		Log.e(TAG, "GStreamer initialization failed: " + e.getMessage());
+		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZATION_FAILED, "GStreamer initialization failed: " + e.getMessage(), e));
+	}
+	
 	}
 	
 	

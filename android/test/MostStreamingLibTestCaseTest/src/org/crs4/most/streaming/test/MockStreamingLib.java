@@ -53,6 +53,9 @@ public class MockStreamingLib implements IStream  {
 			HashMap<String, String> configParams, Handler notificationHandler)
 			throws Exception {
 		
+		//if (context==null) throw new IllegalArgumentException("Context parameter cannot be null");
+    	if (notificationHandler==null) throw new IllegalArgumentException("Handler parameter cannot be null");
+    	//if (surface==null) throw new IllegalArgumentException("Surface parameter cannot be null");
 		if  (!configParams.containsKey("name")) throw new Exception("param name not found in Configuration!");
 		if (!configParams.containsKey("uri")) throw new Exception("param uri not found in Configuration!");
 		
