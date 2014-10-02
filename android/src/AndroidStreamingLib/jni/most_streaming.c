@@ -72,7 +72,7 @@ static jmethodID set_current_position_method_id;
 static jmethodID on_gstreamer_initialized_method_id;
 static jmethodID on_media_size_changed_method_id;
 
-static int streams_count = 0; // Streams reference counter used to finalize global references when all streams ha been deallocated
+static int streams_count = 0; // Streams reference counter used to finalize global references when all streams have been deallocated
 
 //static jobject global_app;                  /* Application instance, used to call its methods. A global reference is kept. */
 /*

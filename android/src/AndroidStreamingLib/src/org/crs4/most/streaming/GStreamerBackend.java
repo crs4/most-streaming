@@ -72,7 +72,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	
     	this.notificationHandler = notificationHandler;
     	
-    	this.surfaceView = surfaceView;
+    	this.surfaceView = surface;
     	this.surfaceView.getHolder().addCallback(this);
     	
     	this.initLib();

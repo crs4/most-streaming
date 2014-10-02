@@ -18,6 +18,9 @@ public class MockStreamingLib implements IStream  {
 	
 	private static final String TAG = "StreamingLibMock";
 	private Handler notificationHandler =null;
+	private String streamName = null;
+	private String uri = null;
+	private int latency = 200;
 	
 	private void notifyState(StreamingEventBundle myStateBundle)
     {
@@ -27,7 +30,11 @@ public class MockStreamingLib implements IStream  {
 			case LIB_INITIALIZED: Log.d(TAG, "Streaming Lib initialized"); break;
 			case LIB_DEINITIALIZING: Log.d(TAG, "Streaming Lib initializing"); break;
 			case LIB_DEINITIALIZED: Log.d(TAG, "Streaming Lib initialized"); break;
-			
+			case STREAM_INITIALIZING: Log.d(TAG, "Stream initializing..."); break;
+			case STREAM_INITIALIZED: Log.d(TAG, "Stream initialized"); break;
+			case STREAM_INITIALIZATION_FAILED: Log.e(TAG, "Stream initialization failed"); break;
+			case STREAM_PLAYING: Log.d(TAG, "Stream is playing"); break;
+			case STREAM_PAUSED: Log.d(TAG, "Stream is paused"); break;
 		default:
 			break;}
 				
@@ -46,11 +53,21 @@ public class MockStreamingLib implements IStream  {
 			HashMap<String, String> configParams, Handler notificationHandler)
 			throws Exception {
 		
-		this.notificationHandler = notificationHandler;
+		if  (!configParams.containsKey("name")) throw new Exception("param name not found in Configuration!");
+		if (!configParams.containsKey("uri")) throw new Exception("param uri not found in Configuration!");
 		
+		this.notificationHandler = notificationHandler;
+		this.streamName =   configParams.get("name");
+    	this.uri = configParams.get("uri");
+    	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
+    	
 		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZING, "Inizializating Streaming Lib", null));
 		this.simulatePause(1);
 		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZED, "Inizialization Ok", null));
+	    
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZING, "Inizializating Stream", null));
+		this.simulatePause(1);
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZED, "Stream Inizialization Ok", null));
 	
 	}
 	
@@ -66,13 +83,14 @@ public class MockStreamingLib implements IStream  {
 
 	@Override
 	public void play() {
-		// TODO Auto-generated method stub
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_PLAYING, "Stream is playing", null));
 		
 	}
 
 	@Override
 	public void pause() {
-		// TODO Auto-generated method stub
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_PLAYING, "Stream is playing", null));
+		
 		
 	}
 
@@ -90,11 +108,9 @@ public class MockStreamingLib implements IStream  {
 
 	@Override
 	public void destroy() {
-		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_DEINITIALIZING, "Deinizializating Streaming Lib", null));
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_DEINITIALIZING, "Deinizializating Stream", null));
 		this.simulatePause(1);
-		
-		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_DEINITIALIZED, "Deinizialization Ok", null));
-		
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_DEINITIALIZED, "Stream Deinizialization Ok", null));
 		
 	}
 

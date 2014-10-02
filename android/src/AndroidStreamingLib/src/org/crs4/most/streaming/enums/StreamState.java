@@ -18,6 +18,6 @@ public enum StreamState {
     /**
      * the stream is in pause state
      */
-    PAUSE,
+    PAUSED,
  
 }

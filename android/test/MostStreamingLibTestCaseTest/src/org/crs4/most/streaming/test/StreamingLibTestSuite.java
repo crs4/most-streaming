@@ -1,6 +1,8 @@
 package org.crs4.most.streaming.test;
 
 
+import java.util.HashMap;
+
 import android.content.Intent;
 import android.os.*;
 import android.test.ActivityUnitTestCase;
@@ -23,7 +25,8 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 		super.setUp();
 		// Starts the MainActivity of the target application
 		startActivity(new Intent(getInstrumentation().getTargetContext(), TestActivity.class), null, null);	
-		myStream = new MockStreamingLib();
+		this.myStream = new MockStreamingLib();
+		this.configParams = new HashMap<String, String>();
 	}
 
 	protected void tearDown() throws Exception {
@@ -72,6 +75,40 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 
 	}
 	
+	class StreamHandlerTest extends HandlerTest {
+		
+		StreamHandlerTest () {
+			
+			this.expectedEvents = new StreamingEvent[] {
+					
+					StreamingEvent.LIB_INITIALIZING , 
+					StreamingEvent.LIB_INITIALIZED , 
+					StreamingEvent.STREAM_INITIALIZING,
+					StreamingEvent.STREAM_INITIALIZED,
+					StreamingEvent.STREAM_PLAYING,
+					StreamingEvent.STREAM_PAUSED,
+					StreamingEvent.STREAM_DEINITIALIZING,
+					StreamingEvent.STREAM_DEINITIALIZED};
+		}
+ 
+		
+		@Override
+		public boolean handleMessage(Message voipMessage) {
+			//int msg_type = voipMessage.what;
+			StreamingEventBundle myEvent = (StreamingEventBundle) voipMessage.obj;
+			String infoMsg = myEvent.getEvent() + ":" + myEvent.getInfo();
+			Log.d(TAG, "handleMessage: Current Event:" + infoMsg);
+			
+			assertEquals( myEvent.getEvent(), expectedEvents[curEventIndex]);
+			curEventIndex++;
+			     if (myEvent.getEvent()==StreamingEvent.STREAM_INITIALIZED)   myStream.play();
+			     else if (myEvent.getEvent()==StreamingEvent.STREAM_PLAYING)   myStream.pause();
+			     else if (myEvent.getEvent()==StreamingEvent.STREAM_PAUSED)   myStream.destroy();
+			return false;
+		}
+
+	}
+	
 	/**
 	 *  This test calls the prepare() method of the Streaming Library. The testing callback method receives the updated Streaming Events. The test checks if
 	 *  the received  Streaming Events match with the expected states. 
@@ -87,11 +124,14 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 	private Handler handler = new Handler(this);
 	private HandlerTest handlerTest = null;
 	private IStream myStream =null;
+	private HashMap<String,String> configParams = null;
  
 	private void _testHandler(HandlerTest handlerTest) {
 		this.handlerTest= handlerTest;
+		this.configParams.put("name", "Stream 1 [Test]");
+		this.configParams.put("uri", "rtp://0.0.0.0:1234/test [Test]");
 	    try {
-			myStream.prepare(null, null, null, this.handler);
+			myStream.prepare(null, null,configParams , handler);
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
