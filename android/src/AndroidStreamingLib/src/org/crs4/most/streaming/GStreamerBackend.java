@@ -13,6 +13,7 @@ package org.crs4.most.streaming;
 
 import java.util.HashMap;
 
+import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
 
@@ -52,6 +53,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     
     private String uri = null;
     private String streamName = null;
+    private StreamState streamState = StreamState.DEINITIALIZED;
     private int latency = 200;
     private static boolean lib_initialized = false;
     
@@ -116,26 +118,27 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	}
     
     private void initStream() {
-    	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZING, "Inizializating Stremm " + this.streamName, this.streamName));
+    	this.streamState = StreamState.INITIALIZING;
+    	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Inizializating Stremm " + this.streamName, this.getState()));
     	
     	boolean stream_initialized = nativeInit(this.streamName, this.latency);
-    	if (stream_initialized)
-    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZED, "Stremm " + this.streamName + " initialized", this.streamName));
-    	else
-    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZATION_FAILED, "Stremm initialization failed:" + this.streamName + " initialized", this.streamName));
-    	
-    }
+    	if (!stream_initialized)
+    	{
+    		this.streamState = StreamState.DEINITIALIZED;
+    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "Stremm initialization failed:" + this.streamName + " initialized", this.getState()));
+    	}
+     
+    	}
     
-	private void initLib() {
-	this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZING, "Inizializating Streaming Lib for stremm " + this.streamName, this.streamName));
+	private void initLib() throws Exception {
+	
 	try {
 		GStreamer.init(this.context);
-		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZED, "GStreamer Lib successfully initialized: for stream " + this.streamName, this.streamName));
 	} catch (Exception e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
 		Log.e(TAG, "GStreamer initialization failed: " + e.getMessage());
-		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZATION_FAILED, "GStreamer initialization failed: " + e.getMessage(), e));
+	    throw new Exception("Error initializing the GStreamer Backend Lib:" + e.getMessage());
 	}
 	
 	}
@@ -211,7 +214,37 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     {   
     	nativeSetUri(this.uri);
     	Log.d("GSTREAMER_BACKEND", "Stream initialized");
-    	//gstListener.onStreamInitialized(this);
+    	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream " + this.streamName + " initialized: (uri:" +this.uri + ")" , StreamState.INITIALIZED));
+    	
+    }
+    
+    // Called from native code wheen the streamState of the native stream changes
+    private void onStreamStateChanged(int streamState){
+    	Log.d(TAG, "onStreamStateChanged: state:" + streamState);
+    	this.streamState = GStreamerBackend.getStreamStateByGstState(streamState);
+    	
+    	
+    	//this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, _, "Inizializating Stremm " + this.streamName, this.streamName));
+    	
+    }
+    
+    // GST_STATE_VOID_PENDING        = 0,
+   	// GST_STATE_NULL                = 1,
+    // GST_STATE_READY               = 2,
+    // GST_STATE_PAUSED              = 3,
+    // GST_STATE_PLAYING             = 4
+    private static StreamState getStreamStateByGstState(int gstState)
+    {
+    	if (gstState<2)
+    		return StreamState.DEINITIALIZED;
+    	else if (gstState==2)
+    		return StreamState.INITIALIZED;
+    	else if (gstState==3)
+    		return StreamState.PAUSED;
+    	else if (gstState==4)
+    		return StreamState.PLAYING;
+    	else
+    		throw new IllegalArgumentException("Unknown pipeline streamState received from gstreamer native code:" + gstState);
     }
     
      // Called from native code
@@ -249,6 +282,10 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	public String getName() {
 		
 		return this.streamName;
+	}
+	@Override
+	public StreamState getState() {
+		return this.streamState;
 	}
 	
 	 

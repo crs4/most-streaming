@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 
 import org.crs4.most.streaming.*;
+import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
 
@@ -21,23 +22,24 @@ public class MockStreamingLib implements IStream  {
 	private String streamName = null;
 	private String uri = null;
 	private int latency = 200;
+	private StreamState streamState = StreamState.DEINITIALIZED;
 	
 	private void notifyState(StreamingEventBundle myStateBundle)
     {
 		Log.d(TAG, "Called notifyState for state:" + myStateBundle.getEvent().name());
-		switch (myStateBundle.getEvent()){
-			case LIB_INITIALIZING: Log.d(TAG, "Streaming Lib initializing"); break;
-			case LIB_INITIALIZED: Log.d(TAG, "Streaming Lib initialized"); break;
-			case LIB_DEINITIALIZING: Log.d(TAG, "Streaming Lib initializing"); break;
-			case LIB_DEINITIALIZED: Log.d(TAG, "Streaming Lib initialized"); break;
-			case STREAM_INITIALIZING: Log.d(TAG, "Stream initializing..."); break;
-			case STREAM_INITIALIZED: Log.d(TAG, "Stream initialized"); break;
-			case STREAM_INITIALIZATION_FAILED: Log.e(TAG, "Stream initialization failed"); break;
-			case STREAM_PLAYING: Log.d(TAG, "Stream is playing"); break;
-			case STREAM_PAUSED: Log.d(TAG, "Stream is paused"); break;
+		StreamingEvent myEvent =   myStateBundle.getEvent();
+		if (myEvent==StreamingEvent.STREAM_STATE_CHANGED) {
+			
+		switch ((StreamState) myStateBundle.getData()){
+			case INITIALIZING:  Log.d(TAG, "Stream has being initialized"); break;
+			case INITIALIZED: Log.d(TAG, "Stream initialized"); break;
+			case PLAYING: Log.d(TAG, "Stream is playing"); break;
+			case PAUSED: Log.d(TAG, "Stream is paused"); break;
+			case DEINITIALIZING:  Log.d(TAG, "Stream has being deinitialized"); break;
+			case DEINITIALIZED:  Log.d(TAG, "Stream is deinitialized"); break;
 		default:
 			break;}
-				
+		}
     	Message m = Message.obtain(this.notificationHandler,myStateBundle.getEventType().ordinal(), myStateBundle);
 		m.sendToTarget();
     }
@@ -61,16 +63,14 @@ public class MockStreamingLib implements IStream  {
 		
 		this.notificationHandler = notificationHandler;
 		this.streamName =   configParams.get("name");
+		this.streamState = StreamState.INITIALIZING;
     	this.uri = configParams.get("uri");
     	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
     	
-		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZING, "Inizializating Streaming Lib", null));
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Inizializating Stream", this.streamState));
 		this.simulatePause(1);
-		this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.LIB_INITIALIZED, "Inizialization Ok", null));
-	    
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZING, "Inizializating Stream", null));
-		this.simulatePause(1);
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZED, "Stream Inizialization Ok", null));
+		this.streamState = StreamState.INITIALIZED;
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream Inizialization Ok",  this.streamState));
 	
 	}
 	
@@ -86,14 +86,15 @@ public class MockStreamingLib implements IStream  {
 
 	@Override
 	public void play() {
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_PLAYING, "Stream is playing", null));
+		this.streamState = StreamState.PLAYING;
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream is playing", this.streamState));
 		
 	}
 
 	@Override
 	public void pause() {
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_PLAYING, "Stream is playing", null));
-		
+		this.streamState = StreamState.PAUSED;
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream is paused", this.streamState));
 		
 	}
 
@@ -111,10 +112,17 @@ public class MockStreamingLib implements IStream  {
 
 	@Override
 	public void destroy() {
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_DEINITIALIZING, "Deinizializating Stream", null));
+		this.streamState = StreamState.DEINITIALIZING;
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stream", this.streamState));
 		this.simulatePause(1);
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_DEINITIALIZED, "Stream Deinizialization Ok", null));
+		this.streamState = StreamState.DEINITIALIZED;
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stream", this.streamState));
+	}
+
+	@Override
+	public StreamState getState() {
 		
+		return this.streamState;
 	}
 
 }

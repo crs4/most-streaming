@@ -71,6 +71,7 @@ static jmethodID set_message_method_id;
 static jmethodID set_current_position_method_id;
 static jmethodID on_gstreamer_initialized_method_id;
 static jmethodID on_media_size_changed_method_id;
+static jmethodID on_stream_state_changed_method_id;
 
 static int streams_count = 0; // Streams reference counter used to finalize global references when all streams have been deallocated
 
@@ -114,6 +115,13 @@ static JNIEnv *get_jni_env (void) {
 
   return env;
 }
+
+static void send_on_stream_state_changed_notification(CustomData *data)
+{
+	JNIEnv *env = get_jni_env ();
+	(*env)->CallVoidMethod (env, data->app, on_stream_state_changed_method_id, (jint) data->state);
+}
+
 
 /* Change the content of the UI's TextView */
 static void set_ui_message (const gchar *message, CustomData *data) {
@@ -219,14 +227,16 @@ static void error_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   g_free (debug_info);
   set_ui_message (message_string, data);
   g_free (message_string);
-  data->target_state = GST_STATE_NULL;
   gst_element_set_state (data->pipeline, GST_STATE_NULL);
+  data->target_state = GST_STATE_NULL;
+  //send_on_stream_state_changed_notification(data);
 }
 
 /* Called when the End Of the Stream is reached. Just move to the beginning of the media and pause. */
 static void eos_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   data->target_state = GST_STATE_PAUSED;
   data->is_live = (gst_element_set_state (data->pipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_NO_PREROLL);
+  //send_on_stream_state_changed_notification(data);
   execute_seek (0, data);
 }
 
@@ -299,6 +309,8 @@ static void playbinNotifySource(GObject *o, GstMessage *msg, CustomData *data) {
 		}
 }
 
+
+
 /* Retrieve the video sink's Caps and tell the application about the media size */
 static void check_media_size (CustomData *data) {
 	GST_DEBUG ("DENTRO CHECK_MEDIA SIZE..." );
@@ -334,7 +346,7 @@ static void check_media_size (CustomData *data) {
 }
 
 
-/* Notify UI about pipeline state changes */
+/* Notify Java VM about pipeline state changes */
 static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   GstState old_state, new_state, pending_state;
   gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
@@ -343,6 +355,7 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
     data->state = new_state;
     gchar *message = g_strdup_printf("State changed to %s", gst_element_state_get_name(new_state));
     set_ui_message(message, data);
+    send_on_stream_state_changed_notification(data);
     g_free (message);
 
     /* The Ready to Paused state change is particularly interesting: */
@@ -477,8 +490,8 @@ static jboolean gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name,
   //(*env)->ReleaseStringUTFChars(env, stream_name, data->stream_name);
   //GST_DEBUG("Assigned Stream name (AFTER RELEASE):%s" , data->stream_name);
   SET_CUSTOM_DATA (env, thiz, custom_data_field_id, data);
-  GST_DEBUG_CATEGORY_INIT (debug_category, "most_dual_streaming", 0, "Android dual streming");
-  gst_debug_set_threshold_for_name("most_dual_streaming", GST_LEVEL_DEBUG);
+  GST_DEBUG_CATEGORY_INIT (debug_category, "most_streaming", 0, "Android dual streming");
+  gst_debug_set_threshold_for_name("most_streaming", GST_LEVEL_DEBUG);
   GST_DEBUG ("Created CustomData at %p", data);
 
   data->app =  (*env)->NewGlobalRef (env, thiz);
@@ -568,8 +581,8 @@ static void gst_native_play (JNIEnv* env, jobject thiz) {
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
   if (!data) return;
   GST_DEBUG ("Setting state to PLAYING for stream:%s" , data->stream_name);
-  data->target_state = GST_STATE_PLAYING;
   data->is_live = (gst_element_set_state (data->pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_NO_PREROLL);
+  data->target_state = GST_STATE_PLAYING;
 }
 
 /* Set pipeline to PAUSED state */
@@ -577,8 +590,8 @@ static void gst_native_pause (JNIEnv* env, jobject thiz) {
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
   if (!data) return;
   GST_DEBUG ("Setting state to PAUSED for stream:%s" , data->stream_name);
-  data->target_state = GST_STATE_PAUSED;
   data->is_live = (gst_element_set_state (data->pipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_NO_PREROLL);
+  data->target_state = GST_STATE_PAUSED;
 }
 
 /* Instruct the pipeline to seek to a different position */
@@ -601,9 +614,10 @@ static jboolean gst_native_class_init (JNIEnv* env, jclass klass) {
   set_current_position_method_id = (*env)->GetMethodID (env, klass, "setCurrentPosition", "(II)V");
   on_gstreamer_initialized_method_id = (*env)->GetMethodID (env, klass, "onGStreamerInitialized", "()V");
   on_media_size_changed_method_id = (*env)->GetMethodID (env, klass, "onMediaSizeChanged", "(II)V");
+  on_stream_state_changed_method_id = (*env)->GetMethodID (env, klass, "onStreamStateChanged", "(I)V");
 
   if (!custom_data_field_id || !set_message_method_id || !on_gstreamer_initialized_method_id ||
-      !on_media_size_changed_method_id || !set_current_position_method_id) {
+      !on_media_size_changed_method_id || !set_current_position_method_id || !on_stream_state_changed_method_id) {
     /* We emit this message through the Android log instead of the GStreamer log because the later
      * has not been initialized yet.
      */

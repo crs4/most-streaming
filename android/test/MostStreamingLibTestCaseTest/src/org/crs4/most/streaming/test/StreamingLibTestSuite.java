@@ -12,6 +12,7 @@ import android.view.SurfaceView;
 import org.crs4.most.streaming.IStream;
 import org.crs4.most.streaming.StreamingEventBundle;
 import org.crs4.most.streaming.StreamingFactory;
+import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.test_activity.TestActivity;
 
@@ -36,63 +37,29 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 	
 	 
 	abstract class HandlerTest {
-		protected int curEventIndex = 0;
-		protected StreamingEvent [] expectedEvents = {};
+		protected int curStateIndex = 0;
+		protected StreamState [] expectedStates = {};
 		
 		public boolean isDone() {
-			return curEventIndex>=expectedEvents.length;
+			return curStateIndex>=expectedStates.length;
 		}
 		
 		public abstract boolean handleMessage(Message voipMessage);
 
 	}
 	
-	class StreamingLibInitializationHandlerTest extends HandlerTest {
-		
-		StreamingLibInitializationHandlerTest () {
-			
-			this.expectedEvents = new StreamingEvent[] {
-					
-					StreamingEvent.LIB_INITIALIZING , 
-					StreamingEvent.LIB_INITIALIZED , 
-					StreamingEvent.STREAM_INITIALIZING,
-					StreamingEvent.STREAM_INITIALIZED,
-					StreamingEvent.STREAM_DEINITIALIZING,
-					StreamingEvent.STREAM_DEINITIALIZED,
-					StreamingEvent.LIB_DEINITIALIZING,
-					StreamingEvent.LIB_DEINITIALIZED};
-		}
- 
-		
-		@Override
-		public boolean handleMessage(Message voipMessage) {
-			//int msg_type = voipMessage.what;
-			StreamingEventBundle myEvent = (StreamingEventBundle) voipMessage.obj;
-			String infoMsg = myEvent.getEvent() + ":" + myEvent.getInfo();
-			Log.d(TAG, "handleMessage: Current Event:" + infoMsg);
-			
-			assertEquals( expectedEvents[curEventIndex], myEvent.getEvent());
-			curEventIndex++;
-			     if (myEvent.getEvent()==StreamingEvent.LIB_INITIALIZED)   myStream.destroy();	
-			return false;
-		}
-
-	}
 	
 	class StreamHandlerTest extends HandlerTest {
 		
 		StreamHandlerTest () {
 			
-			this.expectedEvents = new StreamingEvent[] {
-					
-					StreamingEvent.LIB_INITIALIZING , 
-					StreamingEvent.LIB_INITIALIZED , 
-					StreamingEvent.STREAM_INITIALIZING,
-					StreamingEvent.STREAM_INITIALIZED,
-					StreamingEvent.STREAM_PLAYING,
-					StreamingEvent.STREAM_PAUSED,
-					StreamingEvent.STREAM_DEINITIALIZING,
-					StreamingEvent.STREAM_DEINITIALIZED};
+			this.expectedStates = new StreamState[] {
+					StreamState.INITIALIZING,
+					StreamState.INITIALIZED,
+					StreamState.PLAYING,
+					StreamState.PAUSED,
+					StreamState.DEINITIALIZING,
+					StreamState.DEINITIALIZED};
 		}
  
 		
@@ -102,12 +69,13 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 			StreamingEventBundle myEvent = (StreamingEventBundle) voipMessage.obj;
 			String infoMsg = myEvent.getEvent() + ":" + myEvent.getInfo();
 			Log.d(TAG, "handleMessage: Current Event:" + infoMsg);
-			
-			assertEquals( myEvent.getEvent(), expectedEvents[curEventIndex]);
-			curEventIndex++;
-			     if (myEvent.getEvent()==StreamingEvent.STREAM_INITIALIZED)   myStream.play();
-			     else if (myEvent.getEvent()==StreamingEvent.STREAM_PLAYING)   myStream.pause();
-			     else if (myEvent.getEvent()==StreamingEvent.STREAM_PAUSED)   myStream.destroy();
+			assertEquals( StreamingEvent.STREAM_STATE_CHANGED , myEvent.getEvent());
+			StreamState streamState = (StreamState) myEvent.getData();
+			assertEquals(expectedStates[curStateIndex] , streamState);
+			curStateIndex++;
+			     if (streamState==StreamState.INITIALIZED)   myStream.play();
+			     else if (streamState==StreamState.PLAYING)  myStream.pause();
+			     else if (streamState==StreamState.PAUSED)   myStream.destroy();
 			     
 			return false;
 		}
@@ -122,11 +90,11 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 	{
 		Log.d(TAG, "Testing testStreamingLibInitialization...");
 		
-		this.myStream = new MockStreamingLib();
-		//this.myStream = StreamingFactory.getIStream();
+		//this.myStream = new MockStreamingLib();
+		this.myStream = StreamingFactory.getIStream();
 		
 		this.configParams = new HashMap<String, String>();
-		this._testHandler(new StreamingLibInitializationHandlerTest());
+		this._testHandler(new StreamHandlerTest());
 	}
 	
 	

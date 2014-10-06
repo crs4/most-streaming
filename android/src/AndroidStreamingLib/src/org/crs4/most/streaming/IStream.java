@@ -2,6 +2,8 @@ package org.crs4.most.streaming;
 
 import java.util.HashMap;
 
+import org.crs4.most.streaming.enums.StreamState;
+
 import android.content.Context;
 import android.os.Handler;
 import android.view.SurfaceView;
@@ -15,6 +17,14 @@ public interface IStream {
      * @return the name of this stream
      */
     public String getName();
+    
+    
+    /**
+     * 
+     * @return the current state of this stream
+     */
+    public StreamState getState();
+    
     
     
     /**
