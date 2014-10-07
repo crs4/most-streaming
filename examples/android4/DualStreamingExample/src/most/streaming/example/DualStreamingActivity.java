@@ -26,7 +26,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
  
-
+/**
+ * 
+ *  This example shows how to play two simultaneous streams on two Android surfaces by using the underlying native gstreamer backend.
+ *
+ */
 public class DualStreamingActivity extends Activity implements GStreamerListener {
     
 	private static final String TAG = "DualStreamingActivity";
@@ -202,7 +206,7 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
 	@Override
 	public void onMediaSizeChanged(GStreamerBackend gStreamerBackend,
 			int width, int height) {
-		Log.i ("GStreamer", "Media size changed to::: " + width + "x" + height);
+		Log.i ("GStreamerSurfaceView", "Media size changed from native gstreamer to::: " + width + "x" + height);
         final GStreamerSurfaceView gsv = (most.streaming.example.GStreamerSurfaceView) gStreamerBackend.getSurfaceView();
         gsv.media_width = width;
         gsv.media_height = height;

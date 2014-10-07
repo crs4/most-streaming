@@ -19,7 +19,9 @@ import android.view.View;
 public class GStreamerSurfaceView extends SurfaceView {
     public int media_width = 320;
     public int media_height = 240;
-
+    
+    private static String TAG = "GStreamerSurfaceView";
+    
     // Mandatory constructors, they do not do much
     public GStreamerSurfaceView(Context context, AttributeSet attrs,
             int defStyle) {
@@ -34,6 +36,8 @@ public class GStreamerSurfaceView extends SurfaceView {
         super(context);
     }
 
+    
+    
     // Called by the layout manager to find out our size and give us some rules.
     // We will try to maximize our size, and preserve the media's aspect ratio if
     // we are given the freedom to do so.
@@ -45,7 +49,8 @@ public class GStreamerSurfaceView extends SurfaceView {
         int wsize = View.MeasureSpec.getSize(widthMeasureSpec);
         int hsize = View.MeasureSpec.getSize(heightMeasureSpec);
 
-        Log.i ("GStreamer", "onMeasure called with " + media_width + "x" + media_height);
+        Log.d ("GStreamerSurfaceView", "onMeasure called with size w::" +  wsize  + "h::" + hsize);
+        Log.d ("GStreamerSurfaceView", "onMeasure called with media_width::" +  media_width  + " media_height::" + media_height);
         // Obey width rules
         switch (wmode) {
         case View.MeasureSpec.AT_MOST:
@@ -88,7 +93,58 @@ public class GStreamerSurfaceView extends SurfaceView {
         // Obey minimum size
         width = Math.max (getSuggestedMinimumWidth(), width);
         height = Math.max (getSuggestedMinimumHeight(), height);
+        Log.d ("GStreamerSurfaceView", "Setting size: " + width + "," + height);
         setMeasuredDimension(width, height);
     }
+    
+    /* Another sizing policy... choose the policy you prefer or implement a new one...
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+    	
+    	int desiredWidth = this.media_width;
+    	int desiredHeight = this.media_height;
 
+    	int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+    	int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+    	int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+    	int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+
+    	int width;
+    	int height;
+
+    	//Measure Width
+    	if (widthMode == MeasureSpec.EXACTLY) {
+    		Log.d(TAG,"onMeasure width spec EXACTLY");
+    	    //Must be this size
+    	    width = widthSize;
+    	} else if (widthMode == MeasureSpec.AT_MOST) {
+    		Log.d(TAG,"onMeasure width spec AT_MOST");
+    	    //Can't be bigger than...
+    	    width = Math.min(desiredWidth, widthSize);
+    	} else {
+    		Log.d(TAG,"onMeasure with spec UNSPECIFIED");
+    	    width = desiredWidth;
+    	}
+
+    	//Measure Height
+    	if (heightMode == MeasureSpec.EXACTLY) {
+    		Log.d(TAG,"onMeasure height spec EXACTLY");
+    	    //Must be this size
+    	    height = heightSize;
+    	} else if (heightMode == MeasureSpec.AT_MOST) {
+    		Log.d(TAG,"onMeasure height spec AT_MOST");
+    	    //Can't be bigger than...
+    	    height = Math.min(desiredHeight, heightSize);
+    	} else {
+    		Log.d(TAG,"onMeasure height spec UNSPECIFIED");
+    	    //Be whatever you want
+    	    height = desiredHeight;
+    	}
+
+    	//MUST CALL THIS
+    	Log.d (TAG, "Setting video size on surface: " + width + "," + height);
+    	setMeasuredDimension(width, height);
+    }
+    */
+    
 }
