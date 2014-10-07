@@ -301,7 +301,7 @@ static void playbinNotifySource(GObject *o, GstMessage *msg, CustomData *data) {
 
 /* Retrieve the video sink's Caps and tell the application about the media size */
 static void check_media_size (CustomData *data) {
-	GST_DEBUG ("DENTRO CHECK_MEDIA SIZE..." );
+	GST_DEBUG ("IN CHECK_MEDIA SIZE..." );
   JNIEnv *env = get_jni_env ();
   GstElement *video_sink;
   GstPad *video_sink_pad;
@@ -312,7 +312,7 @@ static void check_media_size (CustomData *data) {
   g_object_get (data->pipeline, "video-sink", &video_sink, NULL);
   video_sink_pad = gst_element_get_static_pad (video_sink, "sink");
   caps = gst_pad_get_current_caps (video_sink_pad);
-  GST_DEBUG ("DENTRO CHECK_MEDIA SIZE -> dopo gst_pad_get_current_caps" );
+  GST_DEBUG ("IN CHECK_MEDIA SIZE -> test if gst_video_info_from_caps returns valid video caps" );
   if (gst_video_info_from_caps (&info, caps)) {
     info.width = info.width * info.par_n / info.par_d;
     GST_DEBUG ("Media size is %dx%d, notifying application", info.width, info.height);
@@ -325,7 +325,7 @@ static void check_media_size (CustomData *data) {
   }
   else
   {
-	  GST_DEBUG ("DENTRO CHECK_MEDIA SIZE: IMPOSSIBILE RECUPERARE VIDEO INFO FROM CAPS!!");
+	  GST_WARNING("IN CHECK_MEDIA SIZE:  UNABLE TO RETRIEVE VIDEO INFO FROM CAPS!!");
   }
 
   gst_caps_unref(caps);
@@ -362,7 +362,7 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 static void check_initialization_complete (CustomData *data) {
   JNIEnv *env = get_jni_env ();
   if (!data->initialized && data->native_window && data->main_loop) {
-    GST_DEBUG ("Initialization complete, notifying application. native_window:%p main_loop:%p", data->native_window, data->main_loop);
+    GST_DEBUG ("Initialization completed, notifying application. native_window:%p main_loop:%p", data->native_window, data->main_loop);
 
     /* The main loop is running and we received a native window, inform the sink about it */
     gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (data->pipeline), (guintptr)data->native_window);

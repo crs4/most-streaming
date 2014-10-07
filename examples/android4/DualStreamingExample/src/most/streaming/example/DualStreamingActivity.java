@@ -29,6 +29,7 @@ import android.widget.Toast;
 /**
  * 
  *  This example shows how to play two simultaneous streams on two Android surfaces by using the underlying native gstreamer backend.
+ *  It implements the {@link GStreamerListener} interface for receiving remote notifications from the underlying gstreamer backend. 
  *
  */
 public class DualStreamingActivity extends Activity implements GStreamerListener {

@@ -21,6 +21,11 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 
+/**
+ * 
+ * This class handles a single native gstreamer pipeline. 
+ *
+ */
 public class GStreamerBackend implements SurfaceHolder.Callback {
 
 	
@@ -55,7 +60,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
 	/**
 	 * Instance a new Streaming object
 	 * @param context the application context
-	 * @param gstListener the Listener where to receive all notification from the Library
+	 * @param gstListener the Listener where to receive all notifications from the Library
 	 * @param uri the uri of the stream
 	 * @param latency the preferred latency of the stream (in ms)
 	 * @param surfaceView the Surface where to render the stream
@@ -96,7 +101,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
 	}
 	
 	/**
-	 * pause the stream
+	 * Pause the stream
 	 */
 	public void pause() {
 		nativePause();
@@ -157,7 +162,7 @@ public class GStreamerBackend implements SurfaceHolder.Callback {
     	//Log.i ("GStreamer", "setCurrentPosition: " + position + " on duration;" + duration);
     }
     
-    // Called from native code when the size of the media changes or is first detected.
+    // Called from native code when the size of the media changes or it is first detected.
     // Inform the video surface about the new size and recalculate the layout.
     private void onMediaSizeChanged (int width, int height) {
         Log.i ("GStreamer", "Media size changed to " + width + "x" + height);
