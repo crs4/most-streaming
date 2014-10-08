@@ -14,7 +14,7 @@ The project consists of a set of frameworks that deal with different aspects and
 Streaming Framework
 ~~~~~~~~~~~~~~~~~~~
 
-The Streaming Framework allows you to create desktop and mobile application capable of retrieve, decode and display AV stream transmitted by medical device and network cameras.
+The Streaming Framework allows you to create desktop and mobile application capable of retrieve, decode and display AV stream transmitted by medical devices and network cameras.
 
 The framework is based on opensource library `GStreamer <http://gstreamer.com>`_. GStreamer is a library for constructing graphs of media-handling components. The applications it supports range from simple Ogg/Vorbis playback, audio/video streaming to complex audio (mixing) and video (non-linear editing) processing.
 
