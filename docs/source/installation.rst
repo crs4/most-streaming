@@ -17,7 +17,7 @@ iOS Requirements
     - Install iOS framework (installer put framework to ~/Library/Developer/GStreamer/iPhone.sdk)
 
 
-Installation
-~~~~~~~~~~~~
+.. Installation
+
 
 
