@@ -8,6 +8,7 @@ LOCAL_SHARED_LIBRARIES := gstreamer_android
 LOCAL_LDLIBS := -llog -landroid
 include $(BUILD_SHARED_LIBRARY)
 
+# please, change the following two absolute paths according to your system configuration
 GSTREAMER_SDK_ROOT_ANDROID := /home/smonni/HF/HF/MOST/GSTREAMER/gstreamer-1.0-android-arm-1.2.4.1-debug
 GSTREAMER_ROOT := /home/smonni/HF/HF/MOST/GSTREAMER/gstreamer-1.0-android-arm-1.2.4.1-debug
 
@@ -17,6 +18,7 @@ $(error GSTREAMER_SDK_ROOT_ANDROID is not defined!)
 endif
 GSTREAMER_SDK_ROOT        := $(GSTREAMER_SDK_ROOT_ANDROID)
 endif
+
 GSTREAMER_NDK_BUILD_PATH  := $(GSTREAMER_SDK_ROOT)/share/gst-android/ndk-build/
 include $(GSTREAMER_NDK_BUILD_PATH)/plugins.mk
 # GSTREAMER_PLUGINS         := $(GSTREAMER_PLUGINS_CORE) $(GSTREAMER_PLUGINS_SYS)  $(GSTREAMER_PLUGINS_VIS) $(GSTREAMER_PLUGINS_EFFECTS) $(GSTREAMER_PLUGINS_NET)   $(GSTREAMER_PLUGINS_NET_RESTRICTED)  $(GSTREAMER_PLUGINS_CODECS)  $(GSTREAMER_PLUGINS_CODECS_GPL) $(GSTREAMER_PLUGINS_CODECS_RESTRICTED) $(GSTREAMER_PLUGINS_PLAYBACK)
