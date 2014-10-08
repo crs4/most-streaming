@@ -5,7 +5,7 @@ Examples
 Android
 -------
 
- * **DualStreamingExample** located into the folder *examples/android4*. This example shows how to simultaneously play two streams on two video surfaces inside an Android Activity by using the underlying native gstreamer backend.
+ * **DualStreamingExample** located into the folder *examples/android*. This example shows how to simultaneously play two streams on two video surfaces inside an Android Activity by using the underlying native gstreamer backend.
  
 iOS
 ---
