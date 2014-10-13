@@ -74,6 +74,8 @@ public class DualStreamingActivity extends Activity implements GStreamerListener
         
         // Initialize GStreamer and warn if it fails
         try {
+        	// Please create your uri.properties.default property file and put it into the assets folder.
+        	// That folder already contains the uri.properties file that you can use as template for your own property file. 
         	Properties uriProps = getUriProperties("uri.properties.default");
         	 String uri = uriProps.getProperty("uri_1"); 
         	 String uri2 = uriProps.getProperty("uri_2"); 

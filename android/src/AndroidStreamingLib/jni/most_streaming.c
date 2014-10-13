@@ -116,10 +116,10 @@ static JNIEnv *get_jni_env (void) {
   return env;
 }
 
-static void send_on_stream_state_changed_notification(CustomData *data)
-{
+static void send_on_stream_state_changed_notification(CustomData *data, GstState old_state, GstState new_state)
+{  	GST_DEBUG ("Calling send_on_stream_state_changed_notifications");
 	JNIEnv *env = get_jni_env ();
-	(*env)->CallVoidMethod (env, data->app, on_stream_state_changed_method_id, (jint) data->state);
+	(*env)->CallVoidMethod (env, data->app, on_stream_state_changed_method_id, (jint) old_state, (jint) new_state);
 }
 
 
@@ -257,7 +257,7 @@ static void buffering_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   if (percent < 100 && data->target_state >= GST_STATE_PAUSED) {
     gchar * message_string = g_strdup_printf ("Buffering %d%%", percent);
     gst_element_set_state (data->pipeline, GST_STATE_PAUSED);
-    set_ui_message (message_string, data);
+    //set_ui_message (message_string, data);
     g_free (message_string);
   } else if (data->target_state >= GST_STATE_PLAYING) {
     gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
@@ -269,6 +269,7 @@ static void buffering_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 /* Called when the clock is lost */
 static void clock_lost_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   if (data->target_state >= GST_STATE_PLAYING) {
+	set_ui_message ("Clock lost...pausing and playing stream", data);
     gst_element_set_state (data->pipeline, GST_STATE_PAUSED);
     gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
   }
@@ -355,7 +356,7 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
     data->state = new_state;
     gchar *message = g_strdup_printf("State changed to %s", gst_element_state_get_name(new_state));
     set_ui_message(message, data);
-    send_on_stream_state_changed_notification(data);
+    send_on_stream_state_changed_notification(data, old_state, new_state);
     g_free (message);
 
     /* The Ready to Paused state change is particularly interesting: */
@@ -374,11 +375,11 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
  * These conditions will change depending on the application */
 static void check_initialization_complete (CustomData *data) {
 
- GST_DEBUG ("CALLED CHECK_INITIALIZATION_COMPLETE");
+ GST_DEBUG ("CALLED CHECK_INITIALIZATION_COMPLETE!!!!");
 
   JNIEnv *env = get_jni_env ();
   if (!data->initialized && data->native_window && data->main_loop) {
-    GST_DEBUG ("Initialization complete, notifying application. native_window:%p main_loop:%p", data->native_window, data->main_loop);
+    GST_DEBUG ("Initialization completed... notifying application. native_window:%p main_loop:%p", data->native_window, data->main_loop);
 
     /* The main loop is running and we received a native window, inform the sink about it */
     gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (data->pipeline), (guintptr)data->native_window);
@@ -389,6 +390,10 @@ static void check_initialization_complete (CustomData *data) {
       (*env)->ExceptionClear (env);
     }
     data->initialized = TRUE;
+  }
+  else
+  {
+	  GST_ERROR ("Initialization NOT completed...");
   }
 
 }
@@ -614,7 +619,7 @@ static jboolean gst_native_class_init (JNIEnv* env, jclass klass) {
   set_current_position_method_id = (*env)->GetMethodID (env, klass, "setCurrentPosition", "(II)V");
   on_gstreamer_initialized_method_id = (*env)->GetMethodID (env, klass, "onGStreamerInitialized", "()V");
   on_media_size_changed_method_id = (*env)->GetMethodID (env, klass, "onMediaSizeChanged", "(II)V");
-  on_stream_state_changed_method_id = (*env)->GetMethodID (env, klass, "onStreamStateChanged", "(I)V");
+  on_stream_state_changed_method_id = (*env)->GetMethodID (env, klass, "onStreamStateChanged", "(II)V");
 
   if (!custom_data_field_id || !set_message_method_id || !on_gstreamer_initialized_method_id ||
       !on_media_size_changed_method_id || !set_current_position_method_id || !on_stream_state_changed_method_id) {

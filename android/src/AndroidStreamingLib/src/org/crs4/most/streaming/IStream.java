@@ -8,7 +8,12 @@ import android.content.Context;
 import android.os.Handler;
 import android.view.SurfaceView;
 
-
+/**
+ * An IStream object represents a single audio/video stream object. You can obtain a new IStream object by calling
+ * one of the methods provided by the class {@link StreamingFactory}.
+ *  
+ *
+ */
 public interface IStream {
 	
 	 

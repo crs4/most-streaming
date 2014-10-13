@@ -64,9 +64,9 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
  
 		
 		@Override
-		public boolean handleMessage(Message voipMessage) {
+		public boolean handleMessage(Message streamingMessage) {
 			//int msg_type = voipMessage.what;
-			StreamingEventBundle myEvent = (StreamingEventBundle) voipMessage.obj;
+			StreamingEventBundle myEvent = (StreamingEventBundle) streamingMessage.obj;
 			String infoMsg = myEvent.getEvent() + ":" + myEvent.getInfo();
 			Log.d(TAG, "handleMessage: Current Event:" + infoMsg);
 			assertEquals( StreamingEvent.STREAM_STATE_CHANGED , myEvent.getEvent());
@@ -107,7 +107,7 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 	private void _testHandler(HandlerTest handlerTest) {
 		this.handlerTest= handlerTest;
 		this.configParams.put("name", "Stream 1 [Test]");
-		this.configParams.put("uri", "rtp://0.0.0.0:1234/test [Test]");
+		this.configParams.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
 	    try {
 			myStream.prepare(getActivity().getApplicationContext(), new SurfaceView(getActivity().getApplicationContext()),configParams , handler);
 		} catch (Exception e1) {
