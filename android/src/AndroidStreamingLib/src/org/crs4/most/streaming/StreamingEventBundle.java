@@ -13,6 +13,11 @@ import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
 
 
+/**
+ * This class represents a container of all the informations of the events triggered by the Streaming Library.
+ *  
+ *
+ */
 public class StreamingEventBundle {
 
 	 
@@ -47,6 +52,10 @@ public class StreamingEventBundle {
 		return eventType;
 	}
 
+	/**
+	 * Get the triggered event
+	 * @return the event triggered by the library
+	 */
 	public StreamingEvent getEvent() {
 		return event;
 	}
@@ -60,7 +69,7 @@ public class StreamingEventBundle {
 	}
 
 	/**
-	 * Get a generic object containing event-specific informations (the object type depends on the type of the event)
+	 * Get a generic object containing event-specific informations (the object type depends on the type of the event). </br> Note that events of type {@link StreamingEventType#STREAM_EVENT} contain the {@link IStream} object that triggered this event 
 	 * @return a generic object containing event-specific informations
 	 */
 	public Object getData() {
