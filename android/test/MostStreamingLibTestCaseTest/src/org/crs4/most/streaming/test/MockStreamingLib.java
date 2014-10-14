@@ -26,28 +26,30 @@ public class MockStreamingLib implements IStream  {
 	
 	private void notifyState(StreamingEventBundle myStateBundle)
     {
-		Log.d(TAG, "Called notifyState for state:" + myStateBundle.getEvent().name());
+		Log.d(TAG, "Called notifyState for event:" + myStateBundle.getEvent().name());
 		StreamingEvent myEvent =   myStateBundle.getEvent();
 		if (myEvent==StreamingEvent.STREAM_STATE_CHANGED) {
-			
-		switch ((StreamState) myStateBundle.getData()){
-			case INITIALIZING:  Log.d(TAG, "Stream has being initialized"); break;
+	    StreamState streamState = ((IStream) myStateBundle.getData()).getState();
+		switch (streamState){
+			case INITIALIZING: Log.d(TAG, "Stream has being initializing"); break;
 			case INITIALIZED: Log.d(TAG, "Stream initialized"); break;
 			case PLAYING: Log.d(TAG, "Stream is playing"); break;
 			case PAUSED: Log.d(TAG, "Stream is paused"); break;
-			case DEINITIALIZING:  Log.d(TAG, "Stream has being deinitialized"); break;
-			case DEINITIALIZED:  Log.d(TAG, "Stream is deinitialized"); break;
+			case DEINITIALIZING: Log.d(TAG, "Stream has being deinitialized"); break;
+			case DEINITIALIZED:  Log.d(TAG, "Stream is deinitialized"); this.streamState = StreamState.DEINITIALIZED; break;
 		default:
 			break;}
 		}
+		
+		Log.d(TAG, "Sending event with stream state:" + this.streamState);
     	Message m = Message.obtain(this.notificationHandler,myStateBundle.getEventType().ordinal(), myStateBundle);
 		m.sendToTarget();
     }
 
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return this.streamName;
 	}
 
 	@Override
@@ -66,11 +68,11 @@ public class MockStreamingLib implements IStream  {
 		this.streamState = StreamState.INITIALIZING;
     	this.uri = configParams.get("uri");
     	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
-    	
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Inizializating Stream", this.streamState));
+ 
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Inizializating Stream", this));
 		this.simulatePause(1);
 		this.streamState = StreamState.INITIALIZED;
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream Inizialization Ok",  this.streamState));
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream Inizialization Ok",  this));
 	
 	}
 	
@@ -87,14 +89,14 @@ public class MockStreamingLib implements IStream  {
 	@Override
 	public void play() {
 		this.streamState = StreamState.PLAYING;
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream is playing", this.streamState));
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream is playing", this));
 		
 	}
 
 	@Override
 	public void pause() {
 		this.streamState = StreamState.PAUSED;
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream is paused", this.streamState));
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream is paused", this));
 		
 	}
 
@@ -113,10 +115,14 @@ public class MockStreamingLib implements IStream  {
 	@Override
 	public void destroy() {
 		this.streamState = StreamState.DEINITIALIZING;
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stream", this.streamState));
-		this.simulatePause(1);
-		this.streamState = StreamState.DEINITIALIZED;
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stream", this.streamState));
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stream", this));
+		// Commented 
+		//this.simulatePause(1);
+		//this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream deinitialized", this));
+			
+
+		
+		
 	}
 
 	@Override

@@ -123,13 +123,13 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     
     private void initStream() {
     	this.streamState = StreamState.INITIALIZING;
-    	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_INITIALIZING, "Inizializating Stream " + this.streamName, this.getState()));
+    	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Inizializating Stream " + this.streamName, this));
     	
     	boolean native_init_result = nativeInit(this.streamName, this.latency);
     	if (!native_init_result)
     	{
     		this.streamState = StreamState.DEINITIALIZED;
-    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "Stremm initialization failed:" + this.streamName + " initialized", this.getState()));
+    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "Stremm initialization failed:" + this.streamName + " initialized", this));
     	}
     }
     
@@ -201,7 +201,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	
 	@Override
 	public void destroy() {
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_DEINITIALIZING, "Deinizializating Stremm " + this.streamName, this.getState()));
+		this.streamState = StreamState.DEINITIALIZING;
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stremm " + this.streamName, this));
     	
 		nativeFinalize();
 	}
@@ -235,7 +236,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     		
     		this.setUri(this.uri);
     		this.stream_initialized = true;
-    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream " + this.streamName + " initialized: (uri:" +this.uri + ")" , this.streamState));
+    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream " + this.streamName + " initialized: (uri:" +this.uri + ")" , this));
     	}
     	else{
     		Log.w(TAG, "Stream already initialized.Unexpected callback from gstreamer ?!");
@@ -251,7 +252,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	// from pause to play or from play to pause
     	if ((oldState==3 && newState==4) || (oldState==4 && newState==3)) {
     		this.streamState = GStreamerBackend.getStreamStateByGstState(newState);
-    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this.streamState));
+    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this));
     	}
     	// stream deinitialized
     	else if ((oldState>=2 && newState<=1))

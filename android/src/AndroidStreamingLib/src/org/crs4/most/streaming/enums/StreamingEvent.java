@@ -15,9 +15,7 @@ package org.crs4.most.streaming.enums;
  */
 public enum StreamingEvent {
   
-  STREAM_INITIALIZING,  
-  STREAM_STATE_CHANGED,   
-  STREAM_DEINITIALIZING, 
-  STREAM_ERROR
+  STREAM_STATE_CHANGED,     /** a stream internal state change occurred */
+  STREAM_ERROR   			/** a streaming error occurred */
 }
    

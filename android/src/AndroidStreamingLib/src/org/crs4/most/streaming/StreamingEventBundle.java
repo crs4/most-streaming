@@ -22,11 +22,14 @@ public class StreamingEventBundle {
 	private Object data = null;
 	
 	/**
-	 * This object contains all the informations of a Stream Event triggered by the Streaming Library
+	 * This object contains all the informations of any event triggered by the Streaming Library.
 	 * @param eventType the type of this event
 	 * @param event the event
 	 * @param info a textual information describing this event
-	 * @param data a generic object containing event-specific informations (the object type depends on the type of the event)
+	 * @param data a generic object containing event-specific informations (the object type depends on the type of the event). In particular:
+	 *   <ul>
+	 *   <li> events of type {@link StreamingEventType#STREAM_EVENT} contain the {@link IStream} object that triggered this event </li> 
+	 *   </ul>
 	 */
 	public StreamingEventBundle(StreamingEventType eventType, StreamingEvent event, String info, Object data)
 	{

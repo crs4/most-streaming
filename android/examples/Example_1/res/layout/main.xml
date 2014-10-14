@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
+    
     android:orientation="vertical" >
 
     <TextView
@@ -10,13 +11,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dip"
-        android:text="Event Log"
+        android:text="@string/event_log"
         android:gravity="center_horizontal" />
     
     <LinearLayout  
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:background="#000000"
+        android:gravity="center_horizontal" 
         
         >
         
@@ -35,6 +38,17 @@
             android:contentDescription="@string/button_pause"
             android:src="@android:drawable/ic_media_pause"
             android:text="@string/button_pause" />
+        
+        
+        <ImageButton
+            android:id="@+id/button_exit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/button_exit"
+            android:src="@android:drawable/ic_lock_power_off"
+            android:text="@string/button_pause" />
+        
+        
     </LinearLayout>
     
     <SurfaceView
