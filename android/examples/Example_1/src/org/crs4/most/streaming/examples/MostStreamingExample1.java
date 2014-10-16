@@ -47,8 +47,7 @@ import org.crs4.most.streaming.enums.StreamingEventType;
 public class MostStreamingExample1 extends Activity implements Handler.Callback {
     
 	private static final String TAG = "MostStreamingExample1";
-	
-	
+
 	// The stream object 
 	private IStream myStream = null;
 	
@@ -134,12 +133,15 @@ public class MostStreamingExample1 extends Activity implements Handler.Callback 
     {
     	// Get a new instance of the stream by using the factory class
     	txtView.setText("Getting IStreamInstance,,,");
-    	this.myStream = StreamingFactory.getIStream();
-    	txtView.setText("Preparing stream");
+    	
     	
     	try {
+    		this.myStream = StreamingFactory.getIStream(this.getApplicationContext(),getConfigParams(), this.handler);
+        	txtView.setText("Preparing stream");
+        	
     		// initialize the stream
-			this.myStream.prepare(this.getApplicationContext(), (SurfaceView) findViewById(R.id.surfaceView1), getConfigParams(), this.handler);
+			this.myStream.prepare((SurfaceView) findViewById(R.id.surfaceView1));
+			
 		} catch (Exception e) {
 			this.txtView.setText("Error preparing stream:" + e.getMessage());
 			e.printStackTrace();
@@ -192,7 +194,14 @@ public class MostStreamingExample1 extends Activity implements Handler.Callback 
 			     {
 			    	 this.changeButtonsState(false);
 			     }
+			   
 			}
+		else if (myEvent.getEvent()==StreamingEvent.STREAM_ERROR)
+		{
+			// notify the user about the event error and the new Stream state.
+			this.txtView.setText("Stream Error:" + infoMsg + " Stream State:" + ((IStream) myEvent.getData()).getState());
+		}
+		 
 		     
 		return false;
 	}

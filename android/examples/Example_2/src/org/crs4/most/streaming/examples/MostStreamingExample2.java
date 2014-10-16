@@ -1,0 +1,199 @@
+/*!
+ * Project MOST - Moving Outcomes to Standard Telemedicine Practice
+ * http://most.crs4.it/
+ *
+ * Copyright 2014, CRS4 srl. (http://www.crs4.it/)
+ * Dual licensed under the MIT or GPL Version 2 licenses.
+ * See license-GPLv2.txt or license-MIT.txt
+ */
+
+package org.crs4.most.streaming.examples;
+
+import java.util.HashMap;
+
+import org.crs4.most.streaming.IStream;
+import org.crs4.most.streaming.StreamingEventBundle;
+import org.crs4.most.streaming.StreamingFactory;
+import org.crs4.most.streaming.enums.StreamState;
+import org.crs4.most.streaming.enums.StreamingEvent;
+import org.crs4.most.streaming.enums.StreamingEventType;
+
+import android.app.FragmentTransaction;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+
+import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
+import android.view.SurfaceView;
+import android.widget.TextView;
+
+
+
+public class MostStreamingExample2 extends ActionBarActivity implements Handler.Callback, IStreamFragmentCommandListener  {
+	
+	private static final String TAG = "Example2_MainActivity";
+	
+
+	private Handler handler;
+	private TextView txtView = null;
+	
+	private IStream stream1 = null;
+	private IStream stream2 = null;
+	StreamFragment stream1Fragment = null;
+	StreamFragment stream2Fragment = null;
+	 
+	@Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        if (savedInstanceState == null)
+        {
+         try {
+        	this.handler = new Handler(this);
+        	this.txtView = (TextView) this.findViewById(R.id.textview_message);
+        	
+        	HashMap<String,String> stream1_params = new HashMap<String,String>();
+        	stream1_params.put("name", "Stream_1");
+        	stream1_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
+        	
+        	// Instance the first stream and the first Streamfragment
+        	this.stream1 = StreamingFactory.getIStream(this.getApplicationContext(), stream1_params, this.handler);
+        	// Instance the fragment that will be handle the first stream by passing the stream name as its ID.
+        	this.stream1Fragment = StreamFragment.newInstance(stream1.getName());
+        	
+        	// add the first fragment to the first container
+        	FragmentTransaction fragmentTransaction = getFragmentManager()
+    				.beginTransaction();
+    		fragmentTransaction.add(R.id.container_stream_1,
+    				stream1Fragment);
+    		fragmentTransaction.commit();
+        	
+        	HashMap<String,String> stream2_params = new HashMap<String,String>();
+        	stream2_params.put("name", "Stream_2");
+        	stream2_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
+        	
+        	// Instance the second stream and the first Streamfragment
+        	this.stream2 = StreamingFactory.getIStream(this.getApplicationContext(), stream2_params, this.handler);
+        	// Instance the fragment that will be handle the first stream by passing the stream name as its ID.
+        	this.stream2Fragment = StreamFragment.newInstance(stream2.getName());
+        	
+        	// add the first fragment to the first container
+        	fragmentTransaction = getFragmentManager()
+    				.beginTransaction();
+    		fragmentTransaction.add(R.id.container_stream_2,
+    				stream2Fragment);
+    		fragmentTransaction.commit();
+        	
+       
+			} catch (Exception e) {
+				e.printStackTrace();
+				txtView.setText("Error initializing the streams:" + e.getMessage());
+			}
+        }
+    }
+
+	@Override
+	// handle all events triggered from the streaming library
+	public boolean handleMessage(Message streamingMessage) {
+    	
+    	// The bundle containing all available informations and resources about the incoming event
+		StreamingEventBundle myEvent = (StreamingEventBundle) streamingMessage.obj;
+		
+		String infoMsg ="Event Type:" +  myEvent.getEventType() + " ->" +  myEvent.getEvent() + ":" + myEvent.getInfo();
+		Log.d(TAG, "handleMessage: Current Event:" + infoMsg);
+		
+		
+		
+		// for simplicity, in this example we only handle events of type STREAM_EVENT
+		if (myEvent.getEventType()==StreamingEventType.STREAM_EVENT && myEvent.getEvent()== StreamingEvent.STREAM_STATE_CHANGED)
+			{
+			    // All events of type STREAM_EVENT provide a reference to the stream that triggered it.
+			    // In this case we are handling a two streams, so we need to check the stream that triggered the event.
+			    // Note that we are only interested to the new state of the stream
+				IStream stream  =  (IStream) myEvent.getData();
+			
+				// notify the user about the event and the new Stream state.
+				this.txtView.setText("Stream:"  + stream.getName() + "  State:" + stream.getState().toString());
+			    
+				 switch(stream.getState())
+				 {
+				 	case INITIALIZING: txtView.setText("Stream:" + stream.getName() + " HAS BEING INITIALIZED"); break;
+				 	case INITIALIZED: txtView.setText("Stream:" + stream.getName() + " INITIALIZED"); break;
+				 	case PLAYING: txtView.setText("Stream:" + stream.getName() + " IS PLAYING"); break;
+				 	case PAUSED: txtView.setText("Stream:" + stream.getName() + " IS PAUSED"); break;
+				 	case DEINITIALIZING: txtView.setText("Stream:" + stream.getName() + " HAS BEING DEINITIALIZED"); break;
+				 	case DEINITIALIZED: txtView.setText("Stream:" + stream.getName() + " IS DEINITIALIZED"); break;
+				 	
+				 }
+			   
+			}
+		     
+		return false;
+	}
+
+	@Override
+	public void onPlay(String streamId) {
+		Log.d(TAG, "Called onPlay request for stream:" + streamId);
+		if (streamId.equals(this.stream1.getName()))
+		{
+			if (this.stream1.getState()==StreamState.INITIALIZED || this.stream1.getState()==StreamState.PAUSED)
+			{
+				Log.d(TAG, "Trying to play stream:" + streamId);
+				this.stream1.play();
+			}
+		}
+		else if (streamId.equals(this.stream2.getName()))
+		{
+			 
+			if (this.stream2.getState()==StreamState.INITIALIZED || this.stream2.getState()==StreamState.PAUSED)
+			{
+				Log.d(TAG, "Trying to play stream:" + streamId);
+				this.stream2.play();
+			}
+		}
+		
+	}
+
+	@Override
+	public void onPause(String streamId) {
+		Log.d(TAG, "Called onPause request for stream:" + streamId);
+		if (streamId.equals(this.stream1.getName()))
+		{
+			if (this.stream1.getState()==StreamState.PLAYING)
+			{
+				Log.d(TAG, "Trying to pause stream:" + streamId);
+				this.stream1.pause();
+			}
+		}
+		else if (streamId.equals(this.stream2.getName()))
+		{
+			if (this.stream2.getState()==StreamState.PLAYING)
+			{
+				Log.d(TAG, "Trying to pause stream:" + streamId);
+				this.stream2.pause();
+			}
+		}
+		
+	}
+
+	@Override
+	public void onSurfaceViewCreated(String streamId, SurfaceView surfaceView) {
+		Log.d(TAG, "Stream_ID:" + streamId);
+		Log.d(TAG, "SurfaceView:" + surfaceView);
+		
+		if (streamId.equals(this.stream1.getName()))
+		{
+			 
+			this.stream2.prepare((SurfaceView) this.stream1Fragment.getView().findViewById(R.id.streamSurface));
+		}
+		else if (streamId.equals(this.stream2.getName()))
+		{    
+			this.stream2.prepare((SurfaceView) this.stream2Fragment.getView().findViewById(R.id.streamSurface));
+		}
+	}
+    
+	
+	
+}

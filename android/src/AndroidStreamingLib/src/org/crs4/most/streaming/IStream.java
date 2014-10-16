@@ -33,21 +33,11 @@ public interface IStream {
     
     
     /**
-	 * Instance a new Streaming object
-	 * @param context the application context
+	 * Prepare the stream by providing a video surface
 	 * @param surfaceView the Surface where to render the stream
-	 * @param configParams All needed configuration string parameters. All the supported parameters are the following:
-	 * 	<ul>
-	 * 		<li>name: (mandatory) the name of the stream (it must be unique for stream)</li>
-	 * 		<li>uri: (mandatory) the uri of the stream (it can be also changed later)</li>
-	 * 		<li>latency: (optional) the preferred latency of the stream in ms (default value: 200 ms) </li>
-	 * 	</ul>
-	 * 
-	 * @param notificationHandler the handler where to receive all notifications from the Library
 	 *
-	 * @throws Exception
 	 */
-	public void prepare(Context context, SurfaceView surface, HashMap<String,String> configParams, Handler notificationHandler) throws Exception;
+	public void prepare(SurfaceView surface);
 	
     /**
      * Play the stream
@@ -75,5 +65,6 @@ public interface IStream {
 	 * Destroy this stream
 	 */
 	public void destroy();
+
 }
 

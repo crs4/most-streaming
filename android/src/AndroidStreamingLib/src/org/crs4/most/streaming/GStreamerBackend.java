@@ -74,30 +74,15 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
      lib_initialized = nativeClassInit();
     }
     
-    public GStreamerBackend()
+    public GStreamerBackend(Context context, HashMap<String, String> configParams ,Handler notificationHandler) throws Exception
     {
     	Log.d((TAG), "GStreamerBackend instance...");
-    }
-    
-    private void notifyState(StreamingEventBundle myStateBundle)
-    {
-    	Message m = Message.obtain(this.notificationHandler,myStateBundle.getEventType().ordinal(), myStateBundle);
-		m.sendToTarget();
-    }
-    
-    @Override
-	public void prepare(Context context, SurfaceView surface,
-			HashMap<String, String> configParams, Handler notificationHandler)  
-			throws Exception {
-	    
-    	Log.d((TAG), "preparing IStream instance...");
-    	
     	if (!lib_initialized) throw new Exception("Error initilializing the native library.");
     	if (stream_initialized) throw new Exception("Error preparing the strem because it results already initialized");
     	
     	if (context==null) throw new IllegalArgumentException("Context parameter cannot be null");
     	if (notificationHandler==null) throw new IllegalArgumentException("Handler parameter cannot be null");
-    	if (surface==null) throw new IllegalArgumentException("Surface parameter cannot be null");
+    	
     	if  (!configParams.containsKey("name")) throw new IllegalArgumentException("param name not found in configParams");
 		if (!configParams.containsKey("uri"))  throw new IllegalArgumentException("param uri not found in configParams ");
 		
@@ -113,12 +98,32 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	this.uri = configParams.get("uri");
     	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
     	
-    	
-    	this.surfaceView = surface;
-    	this.surfaceView.getHolder().addCallback(this);
-    
     	this.initLib();
-    	this.initStream();
+    }
+    
+    private void notifyState(StreamingEventBundle myStateBundle)
+    {
+    	Message m = Message.obtain(this.notificationHandler,myStateBundle.getEventType().ordinal(), myStateBundle);
+		m.sendToTarget();
+    }
+    
+    @Override
+	public void prepare(SurfaceView surface)  
+		 {
+	    	Log.d((TAG), "preparing IStream instance...");
+	    
+	    	if (surface==null) 
+	    	{
+	    		this.streamState = StreamState.DEINITIALIZED;
+	    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "No valid surface provided for the stream: " + this.streamName, this));
+	    	}
+	    		else
+	    	{
+	    		this.surfaceView = surface;
+	        	this.surfaceView.getHolder().addCallback(this);
+	        	this.initStream();
+	    	}
+    	
 	}
     
     private void initStream() {
