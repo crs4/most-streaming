@@ -76,7 +76,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     
     public GStreamerBackend(Context context, HashMap<String, String> configParams ,Handler notificationHandler) throws Exception
     {
-    	Log.d((TAG), "GStreamerBackend instance...");
+    	Log.d((TAG), "GStreamerBackend instance *****");
     	if (!lib_initialized) throw new Exception("Error initilializing the native library.");
     	if (stream_initialized) throw new Exception("Error preparing the strem because it results already initialized");
     	
@@ -98,7 +98,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	this.uri = configParams.get("uri");
     	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
     	
-    	this.initLib();
+    	
     }
     
     private void notifyState(StreamingEventBundle myStateBundle)
@@ -116,11 +116,22 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	    	{
 	    		this.streamState = StreamState.DEINITIALIZED;
 	    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "No valid surface provided for the stream: " + this.streamName, this));
+	    	
 	    	}
 	    		else
 	    	{
-	    		this.surfaceView = surface;
-	        	this.surfaceView.getHolder().addCallback(this);
+	    		
+	        	try {
+					this.initLib();
+					this.surfaceView = surface;
+		        	this.surfaceView.getHolder().addCallback(this);
+				} catch (Exception e) {
+					Log.e(TAG, "Error calling initLib");
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.STREAM_ERROR, "Error initializing the native lib!: ", this));
+			    	
+				}
 	        	this.initStream();
 	    	}
     	
@@ -249,7 +260,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     		
     }
     
-    // Called from native code wheen the streamState of the native stream changes
+    // Called from native code when the streamState of the native stream changes
     private void onStreamStateChanged(int oldState, int newState){
     	Log.d(TAG, "onStreamStateChanged: state from state:" + oldState + " to:" + newState);
     	//this.streamState = GStreamerBackend.getStreamStateByGstState(newState);
@@ -265,7 +276,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     		this.stream_initialized = false;
     		this.streamState = GStreamerBackend.getStreamStateByGstState(newState);
     		
-    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this.streamState));
+    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this));
     	}
     	
     }

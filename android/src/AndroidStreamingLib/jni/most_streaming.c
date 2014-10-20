@@ -520,6 +520,11 @@ static void gst_native_finalize (JNIEnv* env, jobject thiz) {
   streams_count--;
   GST_DEBUG ("STREAM COUNT: %d " , streams_count);
 
+  // send notification about the stream destruction
+  GST_DEBUG ("NOTIFYING STATE CHANGE...");
+  // the stream thread was destroyed, so we send notification about the finalization of the stream itself
+  send_on_stream_state_changed_notification(data, 2, 1);
+
   if (streams_count<=0)
   {
 	  GST_DEBUG ("STREAM_COUNT: Deallocate global variables!! ");

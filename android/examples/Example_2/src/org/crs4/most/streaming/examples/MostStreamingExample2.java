@@ -26,6 +26,10 @@ import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 
@@ -42,25 +46,40 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
 	private IStream stream2 = null;
 	StreamFragment stream1Fragment = null;
 	StreamFragment stream2Fragment = null;
+	
+	private boolean exitFromAppRequest = false;
 	 
 	@Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if (savedInstanceState == null)
+        //if (savedInstanceState == null)
         {
          try {
         	this.handler = new Handler(this);
         	this.txtView = (TextView) this.findViewById(R.id.textview_message);
         	
+        	ImageButton exitButton = (ImageButton) this.findViewById(R.id.button_exit);
+        	exitButton.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					exitFromApp();
+					
+				}
+
+				
+			});
+        	
         	HashMap<String,String> stream1_params = new HashMap<String,String>();
         	stream1_params.put("name", "Stream_1");
         	stream1_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
-        	
-        	// Instance the first stream and the first Streamfragment
+    		 
+        	// Instance the first stream 
         	this.stream1 = StreamingFactory.getIStream(this.getApplicationContext(), stream1_params, this.handler);
-        	// Instance the fragment that will be handle the first stream by passing the stream name as its ID.
+        	 
+        	// Instance the first fragment that will be handle the first stream by passing the stream name as its ID.
         	this.stream1Fragment = StreamFragment.newInstance(stream1.getName());
         	
         	// add the first fragment to the first container
@@ -70,16 +89,17 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
     				stream1Fragment);
     		fragmentTransaction.commit();
         	
+    		
         	HashMap<String,String> stream2_params = new HashMap<String,String>();
         	stream2_params.put("name", "Stream_2");
         	stream2_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
         	
-        	// Instance the second stream and the first Streamfragment
+        	// Instance the second stream
         	this.stream2 = StreamingFactory.getIStream(this.getApplicationContext(), stream2_params, this.handler);
-        	// Instance the fragment that will be handle the first stream by passing the stream name as its ID.
+        	// Instance the second fragment that will be handle the second stream by passing the stream name as its ID.
         	this.stream2Fragment = StreamFragment.newInstance(stream2.getName());
         	
-        	// add the first fragment to the first container
+        	// add the second fragment to the second container
         	fragmentTransaction = getFragmentManager()
     				.beginTransaction();
     		fragmentTransaction.add(R.id.container_stream_2,
@@ -94,6 +114,7 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
         }
     }
 
+	
 	@Override
 	// handle all events triggered from the streaming library
 	public boolean handleMessage(Message streamingMessage) {
@@ -120,12 +141,14 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
 				 switch(stream.getState())
 				 {
 				 	case INITIALIZING: txtView.setText("Stream:" + stream.getName() + " HAS BEING INITIALIZED"); break;
-				 	case INITIALIZED: txtView.setText("Stream:" + stream.getName() + " INITIALIZED"); break;
+				 	case INITIALIZED:  txtView.setText("Stream:" + stream.getName() + " INITIALIZED"); break;
 				 	case PLAYING: txtView.setText("Stream:" + stream.getName() + " IS PLAYING"); break;
 				 	case PAUSED: txtView.setText("Stream:" + stream.getName() + " IS PAUSED"); break;
 				 	case DEINITIALIZING: txtView.setText("Stream:" + stream.getName() + " HAS BEING DEINITIALIZED"); break;
-				 	case DEINITIALIZED: txtView.setText("Stream:" + stream.getName() + " IS DEINITIALIZED"); break;
-				 	
+				 	case DEINITIALIZED: txtView.setText("Stream:" + stream.getName() + " IS DEINITIALIZED"); 
+				 	Log.d(TAG, "Stream deinitialized. All destroyed ?" + areStreamsDeinitialized() + " Exit request:" + exitFromAppRequest);
+				 	 if (areStreamsDeinitialized() && exitFromAppRequest==true) finish();
+				 	break;
 				 }
 			   
 			}
@@ -177,20 +200,56 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
 		}
 		
 	}
+	
+	private void exitFromApp() {
+		this.exitFromAppRequest = true;
+		this.destroyStreams();
+	}
+	
+	/**
+	 *  
+	 * @return true if all the streams have been deinitialized; false otherwise
+	 */
+	private boolean areStreamsDeinitialized()
+	{
+		return ( (this.stream1==null || this.stream1.getState()==StreamState.DEINITIALIZED) &&
+				 (this.stream2==null || this.stream2.getState()==StreamState.DEINITIALIZED));
+	}
+	
+	private void destroyStreams()
+	{
+		
+		Log.d(TAG, "Destroy the streams");
+		if (this.stream1!=null)
+    		this.stream1.destroy();
+    	if (this.stream2!=null)
+    		this.stream2.destroy();
+	}
+	protected void onDestroy() {
+    	Log.d(TAG, "CALLED ON DESTROY!");
+    	// Remember to destroy the current stream object before exiting the activity...
+        super.onDestroy();
+    }
 
 	@Override
 	public void onSurfaceViewCreated(String streamId, SurfaceView surfaceView) {
 		Log.d(TAG, "Stream_ID:" + streamId);
 		Log.d(TAG, "SurfaceView:" + surfaceView);
-		
+	try{
 		if (streamId.equals(this.stream1.getName()))
-		{
-			 
-			this.stream2.prepare((SurfaceView) this.stream1Fragment.getView().findViewById(R.id.streamSurface));
-		}
-		else if (streamId.equals(this.stream2.getName()))
-		{    
-			this.stream2.prepare((SurfaceView) this.stream2Fragment.getView().findViewById(R.id.streamSurface));
+			{
+				 
+				//this.stream1.prepare((SurfaceView) this.stream1Fragment.getView().findViewById(R.id.streamSurface));
+			Log.d(TAG, "Trying to load tmp surface for stream 1");  
+			this.stream1.prepare(surfaceView);
+			}
+			else if (streamId.equals(this.stream2.getName()))
+			{    
+				Log.d(TAG, "Trying to load tmp surface for stream 2"); 
+				this.stream2.prepare(surfaceView);
+			}
+		}catch (Exception e) {
+			Log.e(TAG,"Exception in onSurfaceCreated");
 		}
 	}
     
