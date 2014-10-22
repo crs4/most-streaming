@@ -1,10 +1,4 @@
-.. java:import:: java.util HashMap
-
 .. java:import:: org.crs4.most.streaming.enums StreamState
-
-.. java:import:: android.content Context
-
-.. java:import:: android.os Handler
 
 .. java:import:: android.view SurfaceView
 
@@ -16,7 +10,7 @@ IStream
 
 .. java:type:: public interface IStream
 
-   An IStream object represents a single audio/video stream object. You can obtain a new IStream object by calling one of the methods provided by the class \ :java:ref:`StreamingFactory`\ .
+   An IStream object represents a single audio/video stream object. You can obtain a new IStream object by calling the method \ :java:ref:`StreamingLib.createStream(java.util.HashMap,android.os.Handler)`\ .
 
 Methods
 -------
@@ -73,22 +67,12 @@ play
 prepare
 ^^^^^^^
 
-.. java:method:: public void prepare(Context context, SurfaceView surface, HashMap<String, String> configParams, Handler notificationHandler) throws Exception
+.. java:method:: public void prepare(SurfaceView surface)
    :outertype: IStream
 
-   Instance a new Streaming object
+   Prepare the stream by providing a video surface
 
-   :param context: the application context
    :param surfaceView: the Surface where to render the stream
-   :param configParams: All needed configuration string parameters. All the supported parameters are the following:
-
-   ..
-
-   * name: (mandatory) the name of the stream (it must be unique for stream)
-   * uri: (mandatory) the uri of the stream (it can be also changed later)
-   * latency: (optional) the preferred latency of the stream in ms (default value: 200 ms)
-   :param notificationHandler: the handler where to receive all notifications from the Library
-   :throws Exception:
 
 setUri
 ^^^^^^

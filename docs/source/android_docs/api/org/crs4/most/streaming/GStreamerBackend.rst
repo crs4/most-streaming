@@ -8,8 +8,6 @@
 
 .. java:import:: org.crs4.most.streaming.enums StreamingEventType
 
-.. java:import:: com.gstreamer GStreamer
-
 .. java:import:: android.content Context
 
 .. java:import:: android.os Handler
@@ -37,7 +35,7 @@ Constructors
 GStreamerBackend
 ^^^^^^^^^^^^^^^^
 
-.. java:constructor:: public GStreamerBackend()
+.. java:constructor:: public GStreamerBackend(HashMap<String, String> configParams, Handler notificationHandler) throws Exception
    :outertype: GStreamerBackend
 
 Methods
@@ -97,7 +95,7 @@ play
 prepare
 ^^^^^^^
 
-.. java:method:: @Override public void prepare(Context context, SurfaceView surface, HashMap<String, String> configParams, Handler notificationHandler) throws Exception
+.. java:method:: @Override public void prepare(SurfaceView surface)
    :outertype: GStreamerBackend
 
 setUri

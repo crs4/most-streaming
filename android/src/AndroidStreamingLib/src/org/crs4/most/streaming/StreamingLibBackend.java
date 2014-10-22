@@ -16,8 +16,35 @@ import com.gstreamer.GStreamer;
 
 import android.content.Context;
 import android.os.Handler;
+import android.provider.ContactsContract.CommonDataKinds.Organization;
 import android.util.Log;
 
+/**
+ * This class implements the {@link StreamingLib} interface by using the GStreamer library as backend.
+ * So, you can get a {@link StreamingLib} instance in the following way:
+ * <pre>
+ * <code> 
+ * StreamingLib myStreamingLib = new StreamingLibBackend();
+ * myStreamingLib.initLib(getApplicationContext());       
+ * </code>
+ *</pre>
+ *  
+ * Remember that, before using the library, you must call the method {@link #initLib(Context)} to initialize it.
+ * </pre>
+ * To get a {@link IStream} instance you can call the {@link #createStream(HashMap, Handler)} method:
+ * <pre>
+ * <code> 
+ * HashMap<String,String> stream1_params = new HashMap<String,String>();
+ * stream1_params.put("name", "Stream_1");
+ * stream1_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
+ * Handler notificationHandler = new Handler(this);
+ * IStream myStream = myStreamingLib.createStream(stream_1_params, notificationHandler);
+ * </code></pre>
+ * 
+ * 
+ * @see StreamingLib
+ *
+ */
 public class StreamingLibBackend implements StreamingLib {
 
 	private static final String TAG = "STREAMINGLIB_BACKEND";
@@ -31,6 +58,9 @@ public class StreamingLibBackend implements StreamingLib {
 	     System.loadLibrary("gstreamer_android");
 	     
 	    }
+	
+	
+	
 	
 	@Override
 	public void initLib(Context context) throws Exception {

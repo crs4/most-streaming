@@ -9,5 +9,6 @@ org.crs4.most.streaming
    GStreamerBackend
    IStream
    StreamingEventBundle
-   StreamingFactory
+   StreamingLib
+   StreamingLibBackend
 

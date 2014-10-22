@@ -4,23 +4,21 @@
 
 .. java:import:: android.os Handler
 
-StreamingFactory
-================
+StreamingLib
+============
 
 .. java:package:: org.crs4.most.streaming
    :noindex:
 
-.. java:type:: public class StreamingFactory
-
-   This class provide factory methods for creating \ :java:ref:`IStream`\  objects.
+.. java:type:: public interface StreamingLib
 
 Methods
 -------
-getIStream
-^^^^^^^^^^
+createStream
+^^^^^^^^^^^^
 
-.. java:method:: public static IStream getIStream(HashMap<String, String> configParams, Handler notificationHandler) throws Exception
-   :outertype: StreamingFactory
+.. java:method:: public IStream createStream(HashMap<String, String> configParams, Handler notificationHandler) throws Exception
+   :outertype: StreamingLib
 
    This factory method provides a new IStrean instance
 
@@ -33,4 +31,15 @@ getIStream
    * latency: (optional) the preferred latency of the stream in ms (default value: 200 ms)
    :param notificationHandler: the handler where to receive all notifications from the Library
    :throws Exception: if an error occurred during the stream initialization
+
+initLib
+^^^^^^^
+
+.. java:method:: public void initLib(Context context) throws Exception
+   :outertype: StreamingLib
+
+   Initialize the streaming library. Note that you must call this method before using any other method of the library
+
+   :param context: the application context
+   :throws Exception: if an error occurred during the library initialization
 
