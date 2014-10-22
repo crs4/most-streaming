@@ -18,7 +18,7 @@ import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
 
-import com.gstreamer.GStreamer;
+//import com.gstreamer.GStreamer;
 
 import android.content.Context;
 
@@ -61,26 +61,27 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
     static {
     	
-     Log.d(TAG,"Loading native libraries...corretta?");
-     
+     Log.d(TAG,"Loading streaming lib backend native libraries..");
+     /*
      Log.d(TAG,"Loading gstreamer_android...");
      System.loadLibrary("gstreamer_android");
+     */
      
      Log.d(TAG,"Loading most_streaming...");
      System.loadLibrary("most_streaming");
      Log.d(TAG,"Libraries loaded.");
-    
+     
      Log.d(TAG,"Loading native class and methods references...");
      lib_initialized = nativeClassInit();
     }
     
-    public GStreamerBackend(Context context, HashMap<String, String> configParams ,Handler notificationHandler) throws Exception
+    public GStreamerBackend(HashMap<String, String> configParams ,Handler notificationHandler) throws Exception
     {
     	Log.d((TAG), "GStreamerBackend instance *****");
     	if (!lib_initialized) throw new Exception("Error initilializing the native library.");
     	if (stream_initialized) throw new Exception("Error preparing the strem because it results already initialized");
     	
-    	if (context==null) throw new IllegalArgumentException("Context parameter cannot be null");
+    	
     	if (notificationHandler==null) throw new IllegalArgumentException("Handler parameter cannot be null");
     	
     	if  (!configParams.containsKey("name")) throw new IllegalArgumentException("param name not found in configParams");
@@ -93,7 +94,6 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	
     	this.notificationHandler = notificationHandler;
     	
-		this.context = context;
     	this.streamName =   configParams.get("name");
     	this.uri = configParams.get("uri");
     	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
@@ -111,33 +111,23 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	public void prepare(SurfaceView surface)  
 		 {
 	    	Log.d((TAG), "preparing IStream instance...");
-	    
-	    	if (surface==null) 
-	    	{
-	    		this.streamState = StreamState.DEINITIALIZED;
-	    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "No valid surface provided for the stream: " + this.streamName, this));
-	    	
-	    	}
-	    		else
-	    	{
-	    		
-	        	try {
-					this.initLib();
-					this.surfaceView = surface;
-		        	this.surfaceView.getHolder().addCallback(this);
-				} catch (Exception e) {
-					Log.e(TAG, "Error calling initLib");
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					this.notifyState(new StreamingEventBundle(StreamingEventType.LIB_EVENT, StreamingEvent.STREAM_ERROR, "Error initializing the native lib!: ", this));
-			    	
-				}
-	        	this.initStream();
-	    	}
-    	
+	        this.initStream(surface);
 	}
     
-    private void initStream() {
+    private void initStream(SurfaceView surface) {
+    	
+    	if (surface==null) 
+    	{
+    		this.streamState = StreamState.DEINITIALIZED;
+    		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "No valid surface provided for the stream: " + this.streamName, this));
+    	    return;
+    	}
+    	
+    	if (this.streamState!=StreamState.DEINITIALIZED)
+    	{
+    		Log.d(TAG,"The stream is currently on state:" + this.streamState + " prepare method ignored..");
+    		return;
+    	}
     	this.streamState = StreamState.INITIALIZING;
     	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Inizializating Stream " + this.streamName, this));
     	
@@ -147,15 +137,22 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     		this.streamState = StreamState.DEINITIALIZED;
     		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "Stremm initialization failed:" + this.streamName + " initialized", this));
     	}
+    	else
+    	{
+    		this.surfaceView = surface;
+	        this.surfaceView.getHolder().addCallback(this);
+    	}
     }
     
+    /*
 	private void initLib() throws Exception {
 	
 	try {
 		GStreamer.init(this.context);
 	} catch (FileNotFoundException e) {
 		
-		Log.w(TAG, "GStreamer.java maybe is trying to copy fonts to assets folder... operation not allowed in to alibrary: " + e.getMessage());
+		Log.w(TAG, "GStreamer.java maybe is trying to copy fonts to assets folder... operation not allowed in to a android library: " + e.getMessage());
+		return;
 	}
 	
 	
@@ -167,7 +164,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		}
 	}
 	
-	
+	*/
+    
     /**
      * 
      * @return the rendering Surface
@@ -217,6 +215,11 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	
 	@Override
 	public void destroy() {
+		if (this.streamState==StreamState.DEINITIALIZED)
+		{
+			Log.d(TAG, "Stream " + this.getName() + " already deinitialized...");
+			return;
+		}
 		this.streamState = StreamState.DEINITIALIZING;
 		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stremm " + this.streamName, this));
     	

@@ -1,6 +1,14 @@
+/*!
+ * Project MOST - Moving Outcomes to Standard Telemedicine Practice
+ * http://most.crs4.it/
+ *
+ * Copyright 2014, CRS4 srl. (http://www.crs4.it/)
+ * Dual licensed under the MIT or GPL Version 2 licenses.
+ * See license-GPLv2.txt or license-MIT.txt
+ */
+
+
 package org.crs4.most.streaming.examples;
-
-
 
 import android.os.Bundle;
 import android.app.Activity;
@@ -12,15 +20,15 @@ import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 
-public class StreamFragment extends Fragment {
+public class StreamViewerFragment extends Fragment {
 	 
 	 public static final String FRAGMENT_STREAM_ID_KEY = "stream_fragment_stream_id_key";
 	 
 	 private IStreamFragmentCommandListener cmdListener = null;
 	 private SurfaceView surfaceView = null;
 	 
-	 public static  StreamFragment newInstance(String streamId) {
-		 StreamFragment sf = new StreamFragment();
+	 public static  StreamViewerFragment newInstance(String streamId) {
+		 StreamViewerFragment sf = new StreamViewerFragment();
 
 	        Bundle args = new Bundle();
 	        args.putString(FRAGMENT_STREAM_ID_KEY, streamId);
@@ -43,7 +51,7 @@ public class StreamFragment extends Fragment {
 	@Override 
 	public void onActivityCreated(Bundle bundle){
 		super.onActivityCreated(bundle);
-		StreamFragment.this.cmdListener.onSurfaceViewCreated(getStreamId(),this.surfaceView);
+		StreamViewerFragment.this.cmdListener.onSurfaceViewCreated(getStreamId(),this.surfaceView);
 	}
 	 
 	    
@@ -51,6 +59,14 @@ public class StreamFragment extends Fragment {
 	   public void onAttach(Activity activity) {
 		   super.onAttach(activity);
 		   this.cmdListener = (IStreamFragmentCommandListener) activity;
+	   }
+	   
+	   @Override
+	   public void onDetach()
+	   {
+		  super.onDetach();
+		  this.cmdListener.onSurfaceViewDestroyed(getStreamId());
+		  
 	   }
 	   
 	    @Override
@@ -64,7 +80,7 @@ public class StreamFragment extends Fragment {
 		        ImageButton butPlay = (ImageButton)  rootView.findViewById(R.id.button_play);
 		        butPlay.setOnClickListener(new OnClickListener() {
 		            public void onClick(View v) {
-		            	StreamFragment.this.cmdListener.onPlay(getStreamId());
+		            	StreamViewerFragment.this.cmdListener.onPlay(getStreamId());
 	            }
 	        });
 	        
@@ -72,15 +88,10 @@ public class StreamFragment extends Fragment {
 	        ImageButton butPause = (ImageButton)  rootView.findViewById(R.id.button_pause);
 	        butPause.setOnClickListener(new OnClickListener() {
 	            public void onClick(View v) {
-	            	StreamFragment.this.cmdListener.onPause(getStreamId());
+	            	StreamViewerFragment.this.cmdListener.onPause(getStreamId());
 	            }
 	        });
 	        
 	        return rootView;
 	          }
-
-		public SurfaceView getSurfaceView() {
-			// TODO Auto-generated method stub
-			return this.surfaceView;
-		}
 }

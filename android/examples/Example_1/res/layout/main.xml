@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:contentDescription="@string/button_exit"
             android:src="@android:drawable/ic_lock_power_off"
-            android:text="@string/button_pause" />
+            android:text="@string/button_exit" />
         
         
     </LinearLayout>

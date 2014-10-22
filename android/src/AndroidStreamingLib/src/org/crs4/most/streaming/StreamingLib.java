@@ -7,6 +7,7 @@
  * See license-GPLv2.txt or license-MIT.txt
  */
 
+
 package org.crs4.most.streaming;
 
 import java.util.HashMap;
@@ -14,14 +15,14 @@ import java.util.HashMap;
 import android.content.Context;
 import android.os.Handler;
 
-
-/**
- * This class provide factory methods for creating {@link IStream} objects.
- *
- *
- */
-public class StreamingFactory {
+public interface StreamingLib {
 	
+	/**
+	 * Initialize the streaming library. Note that you must call this method before using any other method of the library
+	 * @param context the application context
+	 * @throws Exception if an error occurred during the library initialization
+	 */
+	public void initLib(Context context)  throws Exception;
 	
 	/**
 	 * This factory method provides a new IStrean instance
@@ -36,9 +37,6 @@ public class StreamingFactory {
 	 *
 	 * @throws Exception if an error occurred during the stream initialization
 	 */
-	public static IStream getIStream( HashMap<String,String> configParams, Handler notificationHandler) throws Exception
-	{
-		return new GStreamerBackend(configParams, notificationHandler);
-	}
-
+	public IStream createStream(HashMap<String,String> configParams, Handler notificationHandler) throws Exception;
+	
 }

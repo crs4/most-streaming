@@ -31,8 +31,7 @@
           android:text="@string/event_log" />
      
      </RelativeLayout>
-
-
+      
         <FrameLayout
             android:id="@+id/container_stream_1"
             android:layout_height="0px"
