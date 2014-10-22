@@ -11,7 +11,6 @@
 package org.crs4.most.streaming;
 
 
-import java.io.FileNotFoundException;
 import java.util.HashMap;
 
 import org.crs4.most.streaming.enums.StreamState;
@@ -144,27 +143,6 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	}
     }
     
-    /*
-	private void initLib() throws Exception {
-	
-	try {
-		GStreamer.init(this.context);
-	} catch (FileNotFoundException e) {
-		
-		Log.w(TAG, "GStreamer.java maybe is trying to copy fonts to assets folder... operation not allowed in to a android library: " + e.getMessage());
-		return;
-	}
-	
-	
-	catch (Exception e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-		Log.e(TAG, "GStreamer initialization failed: " + e.getMessage());
-	    throw new Exception("Error initializing the GStreamer Backend Lib:" + e.getMessage());
-		}
-	}
-	
-	*/
     
     /**
      * 

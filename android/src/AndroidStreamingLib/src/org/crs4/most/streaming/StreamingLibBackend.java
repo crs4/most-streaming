@@ -16,7 +16,6 @@ import com.gstreamer.GStreamer;
 
 import android.content.Context;
 import android.os.Handler;
-import android.provider.ContactsContract.CommonDataKinds.Organization;
 import android.util.Log;
 
 /**

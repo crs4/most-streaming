@@ -1,7 +1,20 @@
+/*
+ * Project MOST - Moving Outcomes to Standard Telemedicine Practice
+ * http://most.crs4.it/
+ *
+ * Copyright 2014, CRS4 srl. (http://www.crs4.it/)
+ * Dual licensed under the MIT or GPL Version 2 licenses.
+ * See license-GPLv2.txt or license-MIT.txt
+ */
+
+
+
 package org.crs4.most.streaming.test;
 
 
 import java.util.HashMap;
+
+import javax.net.ssl.HandshakeCompletedListener;
 
 import android.content.Intent;
 import android.os.*;
@@ -9,9 +22,11 @@ import android.test.ActivityUnitTestCase;
 import android.util.Log;
 import android.view.SurfaceView;
 
+
 import org.crs4.most.streaming.IStream;
 import org.crs4.most.streaming.StreamingEventBundle;
-import org.crs4.most.streaming.StreamingFactory;
+import org.crs4.most.streaming.StreamingLib;
+//import org.crs4.most.streaming.StreamingLibBackend;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
@@ -37,7 +52,7 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 	}
 	
 	 
-	abstract class HandlerTest {
+	abstract class HandlerTest implements Handler.Callback{
 		protected int curStateIndex = 0;
 		protected StreamState [] expectedStates = {};
 		
@@ -46,7 +61,6 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 		}
 		
 		public abstract boolean handleMessage(Message voipMessage);
-
 	}
 	
 	
@@ -60,7 +74,7 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 					StreamState.PLAYING,
 					StreamState.PAUSED,
 					StreamState.DEINITIALIZING,
-					//StreamState.DEINITIALIZED  commented for a bug in the MockStreamingLib class
+					StreamState.DEINITIALIZED  //commented for a bug in the MockIStream class
 					
 			};
 		}
@@ -87,6 +101,9 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 			     if (streamState==StreamState.INITIALIZED)   myStream.play();
 			     else if (streamState==StreamState.PLAYING)  myStream.pause();
 			     else if (streamState==StreamState.PAUSED)   myStream.destroy();
+			     else if (streamState==StreamState.DEINITIALIZED) {
+			    	 Log.d(TAG,"stream destroyed");
+			     }
 			     
 			return false;
 		}
@@ -101,8 +118,9 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 	{
 		Log.d(TAG, "Testing testStreamingLibInitialization...");
 		
-		this.myStream = new MockStreamingLib();
-		//this.myStream = StreamingFactory.getIStream();
+		this.streamingLib = new StreamingLibMockBackend();  
+		//this.streamingLib = new StreamingLibBackend();
+		 
 		
 		this.configParams = new HashMap<String, String>();
 		this._testHandler(new StreamHandlerTest());
@@ -112,7 +130,8 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 	private static final String TAG = "StreamingTestActivity";
 	private Handler handler = new Handler(this);
 	private HandlerTest handlerTest = null;
-	private IStream myStream =null;
+	private StreamingLib streamingLib =null;
+	private IStream myStream = null;
 	private HashMap<String,String> configParams = null;
  
 	private void _testHandler(HandlerTest handlerTest) {
@@ -120,13 +139,15 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 		this.configParams.put("name", "Stream 1 [Test]");
 		this.configParams.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
 	    try {
-			myStream.prepare(getActivity().getApplicationContext(), new SurfaceView(getActivity().getApplicationContext()),configParams , handler);
+	        this.streamingLib.initLib(getActivity().getApplicationContext());
+	        this.myStream = this.streamingLib.createStream(configParams, this.handler);
+	        this.myStream.prepare(new SurfaceView(getActivity().getApplicationContext()));
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			StreamingLibTestSuite.fail("Failed Streaming Lib initialization:" + e1.getMessage());
 		}
-		Log.d(TAG,"testVoip with HandlerTest");
+		Log.d(TAG,"testStreaming with HandlerTest");
 		 
  
 		while (!handlerTest.isDone())
