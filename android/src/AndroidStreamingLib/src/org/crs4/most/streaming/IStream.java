@@ -12,6 +12,8 @@ package org.crs4.most.streaming;
 
 
 import org.crs4.most.streaming.enums.StreamState;
+import org.crs4.most.streaming.utils.Size;
+
 import android.view.SurfaceView;
 
 /**
@@ -35,6 +37,11 @@ public interface IStream {
      */
     public StreamState getState();
     
+    /**
+     * 
+     * @return the current size of the video stream
+     */
+    public Size getVideoSize();
     
     
     /**

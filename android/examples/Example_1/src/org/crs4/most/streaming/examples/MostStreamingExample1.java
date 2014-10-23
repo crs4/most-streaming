@@ -28,7 +28,6 @@ import android.widget.TextView;
 
 import org.crs4.most.streaming.IStream;
 import org.crs4.most.streaming.StreamingEventBundle;
-import org.crs4.most.streaming.StreamingFactory;
 import org.crs4.most.streaming.StreamingLib;
 import org.crs4.most.streaming.StreamingLibBackend;
 import org.crs4.most.streaming.enums.StreamState;

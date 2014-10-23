@@ -16,6 +16,7 @@ package org.crs4.most.streaming.enums;
 public enum StreamingEvent {
   
   STREAM_STATE_CHANGED,     /** a stream internal state change occurred */
+  VIDEO_SIZE_CHANGED,       /** the size of the video stream changed */ 
   STREAM_ERROR   			/** a streaming error occurred */
 }
    

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     android:layout_marginBottom="16dip"
+     android:gravity="top|center_horizontal"
+     android:orientation="vertical" >
+     
+     <ListView
+        android:id="@+id/listStreams"
+        android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1"
+        android:focusable="true" android:descendantFocusability="beforeDescendants"
+        >
+        
+    </ListView>
+  
+        <FrameLayout
+            android:id="@+id/container_stream_1"
+            android:layout_height="0px"
+            android:layout_width="match_parent"
+            android:layout_weight="2" />
+        
+        
+         <FrameLayout
+            android:id="@+id/container_stream_2"
+            android:layout_height="0px"
+            android:layout_width="match_parent"
+            android:layout_weight="2" />
+    
+
+</LinearLayout>

@@ -9,6 +9,7 @@
 
 package org.crs4.most.streaming.examples;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.crs4.most.streaming.IStream;
@@ -19,19 +20,25 @@ import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
 
+import android.app.Activity;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
 
-import android.support.v7.app.ActionBarActivity;
+
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.SurfaceView;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.ImageButton;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+
+import android.widget.ListView;
 import android.widget.TextView;
+
 
 
 /**
@@ -40,13 +47,16 @@ import android.widget.TextView;
  *  
  *
  */
-public class MostStreamingExample2 extends ActionBarActivity implements Handler.Callback, IStreamFragmentCommandListener  {
+public class MostStreamingExample3 extends Activity implements Handler.Callback, IStreamFragmentCommandListener  {
 	
 	private static final String TAG = "Example2_MainActivity";
 	
+	private ArrayList<IStream> streamsArray = null;
+	private ArrayAdapter<IStream> streamsArrayAdapter = null;
+
 
 	private Handler handler;
-	private TextView txtView = null;
+
 	
 	private IStream stream1 = null;
 	private IStream stream2 = null;
@@ -54,6 +64,30 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
 	StreamViewerFragment stream2Fragment = null;
 	
 	private boolean exitFromAppRequest = false;
+	//ID for the menu exit option
+    private final int ID_MENU_EXIT = 1;
+    
+	 @Override
+	    public boolean onCreateOptionsMenu(Menu menu)
+	    {
+		 	//get the MenuItem reference
+		 MenuItem item = 
+		    	menu.add(Menu.NONE,ID_MENU_EXIT,Menu.NONE,R.string.mnu_exit);
+		 return true;
+	    }
+	 
+	 @Override
+	    public boolean onOptionsItemSelected(MenuItem item)
+	    {
+	    	//check selected menu item
+	    	if(item.getItemId() == ID_MENU_EXIT)
+	    	{
+	    		exitFromApp();
+	    		return true;
+	    	}
+	    	return false;
+	    }
+	 
 	 
 	@Override
     protected void onCreate(Bundle savedInstanceState)
@@ -64,16 +98,7 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
         {
          try {
         	this.handler = new Handler(this);
-        	this.txtView = (TextView) this.findViewById(R.id.textview_message);
         	
-        	ImageButton exitButton = (ImageButton) this.findViewById(R.id.button_exit);
-        	exitButton.setOnClickListener(new OnClickListener() {
-				
-				@Override
-				public void onClick(View v) {
-					exitFromApp();
-				}
-			});
         	
         	// Instance and initialize the Streaming Library
         	
@@ -108,6 +133,7 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
         	
         	// Instance the second StreamViewer fragment where to render the second stream by passing the stream name as its ID.
         	this.stream2Fragment = StreamViewerFragment.newInstance(stream2.getName());
+            
         	
         	// add the second fragment to the second container
         	fragmentTransaction = getFragmentManager()
@@ -115,15 +141,58 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
     		fragmentTransaction.add(R.id.container_stream_2,
     				stream2Fragment);
     		fragmentTransaction.commit();
+    		
+    	
         	
-       
+            this.setupStreamsListView();
+            
 			} catch (Exception e) {
 				e.printStackTrace();
-				txtView.setText("Error initializing the streams:" + e.getMessage());
+				 Log.e(TAG, "Error initializing the streams:" + e.getMessage());
 			}
         }
     }
 
+	
+	 private void setupStreamsListView()
+	    {
+	    		this.streamsArray = new ArrayList<IStream>();
+	    		ListView streamsView = (ListView) findViewById(R.id.listStreams);
+	            this.streamsArray= new ArrayList<IStream>();
+	            
+	            this.streamsArrayAdapter = new IStreamArrayAdapter(this, R.layout.istream_row, this.streamsArray);
+	            
+	            LayoutInflater inflater = getLayoutInflater();
+	            ViewGroup header = (ViewGroup)inflater.inflate(R.layout.istream_header, streamsView, false);
+	            streamsView.addHeaderView(header, null, false);
+	            
+	            streamsView.setAdapter(this.streamsArrayAdapter);
+	    }
+	    
+	private void updateStreamStateInfo(IStream stream)
+	    { Log.d(TAG, "Called updateStreamStateInfo on stream");
+	    	if (stream==null)
+	    	{
+	    		Log.e(TAG, "Called updateBuddyStateInfo on NULL stream");
+	    		return;
+	    	}
+	    	
+	    	Log.d(TAG, "Called updateBuddyStateInfo on stram:" + stream.getName());
+	    	
+	    	int streamPosition = this.streamsArrayAdapter.getPosition(stream);
+	    	if (streamPosition<0)
+	    	{
+	    		Log.d(TAG, "Adding stream to listView!");
+	    		this.streamsArray.add(stream);
+	    		
+	    	}
+	    	else 
+	    	{
+	    		Log.d(TAG, "Replacing stream into the listView!");
+	    		this.streamsArray.set(streamPosition, stream);
+	    	}
+	    	this.streamsArrayAdapter.notifyDataSetChanged();
+	    }
 	
 	@Override
 	// handle all events triggered from the streaming library
@@ -144,18 +213,19 @@ public class MostStreamingExample2 extends ActionBarActivity implements Handler.
 			    // In this case we are handling two streams, so we need to check what stream triggered the event.
 			    // Note that we are only interested to the new state of the stream
 				IStream stream  =  (IStream) myEvent.getData();
-			
-				// notify the user about the event and the new Stream state.
-				this.txtView.setText("Stream:"  + stream.getName() + "  State:" + stream.getState().toString());
-			    
+			   
+				// update the stream array
+				updateStreamStateInfo(stream);
+				
+
 				 switch(stream.getState())
 				 {
-				 	case INITIALIZING: txtView.setText("Stream:" + stream.getName() + " HAS BEING INITIALIZED"); break;
-				 	case INITIALIZED:  txtView.setText("Stream:" + stream.getName() + " INITIALIZED"); break;
-				 	case PLAYING: txtView.setText("Stream:" + stream.getName() + " IS PLAYING"); break;
-				 	case PAUSED: txtView.setText("Stream:" + stream.getName() + " IS PAUSED"); break;
-				 	case DEINITIALIZING: txtView.setText("Stream:" + stream.getName() + " HAS BEING DEINITIALIZED"); break;
-				 	case DEINITIALIZED: txtView.setText("Stream:" + stream.getName() + " IS DEINITIALIZED"); 
+				 	case INITIALIZING: Log.d(TAG, "Stream:" + stream.getName() + " HAS BEING INITIALIZED"); break;
+				 	case INITIALIZED:   Log.d(TAG, "Stream:" + stream.getName() + " INITIALIZED"); break;
+				 	case PLAYING:  Log.d(TAG, "Stream:" + stream.getName() + " IS PLAYING"); break;
+				 	case PAUSED:   Log.d(TAG, "Stream:" + stream.getName() + " IS PAUSED"); break;
+				 	case DEINITIALIZING:  Log.d(TAG, "Stream:" + stream.getName() + " HAS BEING DEINITIALIZED"); break;
+				 	case DEINITIALIZED:  Log.d(TAG, "Stream:" + stream.getName() + " IS DEINITIALIZED"); 
 				 	Log.d(TAG, "Stream deinitialized. All destroyed ?" + areStreamsDeinitialized() + " Exit request:" + exitFromAppRequest);
 				    if (areStreamsDeinitialized() && exitFromAppRequest==true) finish();
 				 	break;

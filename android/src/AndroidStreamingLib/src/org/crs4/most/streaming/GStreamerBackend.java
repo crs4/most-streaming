@@ -16,6 +16,7 @@ import java.util.HashMap;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
+import org.crs4.most.streaming.utils.Size;
 
 //import com.gstreamer.GStreamer;
 
@@ -58,6 +59,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     private static boolean lib_initialized = false;
     private boolean stream_initialized = false;
 
+    private Size videoSize = null;
+    
     static {
     	
      Log.d(TAG,"Loading streaming lib backend native libraries..");
@@ -143,6 +146,11 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	}
     }
     
+    @Override
+    public Size getVideoSize()
+    {
+    	return this.videoSize;
+    }
     
     /**
      * 
@@ -291,7 +299,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     // Inform the video surface about the new size and recalculate the layout.
     private void onMediaSizeChanged (int width, int height) {
         Log.i ("GStreamer", "Media size changed to " + width + "x" + height);
-       //gstListener.onMediaSizeChanged(this,width, height);
+        this.videoSize = new Size(width, height);
+        this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.VIDEO_SIZE_CHANGED, "Stream state changed to:" + this.streamState, this));
     }
     
    
