@@ -19,10 +19,12 @@ import org.crs4.most.streaming.StreamingLibBackend;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
+import org.crs4.most.streaming.examples.StreamDialogFragment.StreamDialogListener;
 
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.os.Handler;
@@ -55,7 +57,7 @@ import android.widget.Toast;
  *  
  *
  */
-public class MostStreamingExample3 extends Activity implements Handler.Callback, IStreamFragmentCommandListener  {
+public class MostStreamingExample3 extends Activity implements Handler.Callback, IStreamFragmentCommandListener, StreamDialogListener  {
 	
 	private static final String TAG = "Example2_MainActivity";
 	
@@ -187,6 +189,11 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 						Log.d(TAG, "SELECTED ITEM:" + String.valueOf(position));
 						// Toast.makeText(getApplicationContext(),"Premuta riga:" + String.valueOf(position), Toast.LENGTH_LONG).show();
 						
+							final IStream selectedStream = streamsArray.get(position-1);
+						    DialogFragment newFragment = StreamDialogFragment.newInstance(selectedStream.getName(), selectedStream.getUri(),
+						    													selectedStream.getLatency());
+						    newFragment.show(getFragmentManager(), "streamDialog");
+						 /*
 						// custom dialog
 						final Dialog dialog = new Dialog(MostStreamingExample3.this);
 						dialog.setContentView(R.layout.istream_popup_editor);
@@ -233,11 +240,26 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 						
 						
 						dialog.show();
-						
-					}
-	            	});
-	            
+						  */
+						}// end of onItemClick
+	            	} 
+	            	 
+	            	);
+	           
 	    }
+	 
+	 	@Override
+		public void onStreamDialogPositiveClick(StreamDialogFragment dialog) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void onStreamDialogNegativeClick(StreamDialogFragment dialog) {
+			// TODO Auto-generated method stub
+			
+		}
+	    
 	    
 	private void updateStreamStateInfo(IStream stream)
 	    { Log.d(TAG, "Called updateStreamStateInfo on stream");
@@ -422,7 +444,8 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 			if (streamId.equals(this.stream2.getName()))
 			this.stream2.destroy();
 	}
-    
+
+	
 	
 	
 }
