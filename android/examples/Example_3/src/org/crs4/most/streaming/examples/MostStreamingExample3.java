@@ -20,7 +20,9 @@ import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
 
+
 import android.app.Activity;
+import android.app.Dialog;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,12 +35,18 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+
 import android.widget.ArrayAdapter;
 
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
-
+import android.widget.Toast;
 
 
 /**
@@ -157,7 +165,7 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 	 private void setupStreamsListView()
 	    {
 	    		this.streamsArray = new ArrayList<IStream>();
-	    		ListView streamsView = (ListView) findViewById(R.id.listStreams);
+	    		final ListView streamsView = (ListView) findViewById(R.id.listStreams);
 	            this.streamsArray= new ArrayList<IStream>();
 	            
 	            this.streamsArrayAdapter = new IStreamArrayAdapter(this, R.layout.istream_row, this.streamsArray);
@@ -167,6 +175,68 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 	            streamsView.addHeaderView(header, null, false);
 	            
 	            streamsView.setAdapter(this.streamsArrayAdapter);
+	            
+	            
+ 
+	            streamsView.setOnItemClickListener(new OnItemClickListener() {
+
+	            	
+					@Override
+					public void onItemClick(AdapterView<?> parent, View view,
+							int position, long id) {
+						Log.d(TAG, "SELECTED ITEM:" + String.valueOf(position));
+						// Toast.makeText(getApplicationContext(),"Premuta riga:" + String.valueOf(position), Toast.LENGTH_LONG).show();
+						
+						// custom dialog
+						final Dialog dialog = new Dialog(MostStreamingExample3.this);
+						dialog.setContentView(R.layout.istream_popup_editor);
+						
+						final IStream selectedStream = streamsArray.get(position-1);
+						
+						dialog.setTitle(selectedStream.getName() + " [" + selectedStream.getState()+"]");
+						
+						
+						EditText txtUri = (EditText) dialog.findViewById(R.id.editUri);
+						final String currentUri =  selectedStream.getUri();
+						txtUri.setText(currentUri);
+						
+						final EditText txtLatency = (EditText) dialog.findViewById(R.id.editLatency);
+						final String currentLatency = String.valueOf(selectedStream.getLatency());
+						txtLatency.setText(currentLatency);
+						
+						Button butOk = (Button) dialog.findViewById(R.id.button_ok);
+						// if button is clicked, close the custom dialog
+						butOk.setOnClickListener(new OnClickListener() {
+							@Override
+							public void onClick(View v) {
+								if (!txtLatency.getText().toString().equals(currentLatency))
+								{
+									int currentLatencyValue = Integer.parseInt(txtLatency.getText().toString());
+									 selectedStream.setLatency(currentLatencyValue);
+								}
+								else{
+									Log.d(TAG, "No latency value changed");
+								}
+								dialog.dismiss();
+							}
+						});
+						
+						Button butCancel = (Button) dialog.findViewById(R.id.button_cancel);
+						// if button is clicked, close the custom dialog
+						butCancel.setOnClickListener(new OnClickListener() {
+							@Override
+							public void onClick(View v) {
+								Log.d(TAG, "Dialog operation cancelled");
+								dialog.dismiss();
+							}
+						});
+						
+						
+						dialog.show();
+						
+					}
+	            	});
+	            
 	    }
 	    
 	private void updateStreamStateInfo(IStream stream)
@@ -177,7 +247,7 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 	    		return;
 	    	}
 	    	
-	    	Log.d(TAG, "Called updateBuddyStateInfo on stram:" + stream.getName());
+	    	Log.d(TAG, "Called updateStreamStateInfo on stram:" + stream.getName());
 	    	
 	    	int streamPosition = this.streamsArrayAdapter.getPosition(stream);
 	    	if (streamPosition<0)
@@ -207,7 +277,8 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 		
 		
 		// for simplicity, in this example we only handle events of type STREAM_EVENT
-		if (myEvent.getEventType()==StreamingEventType.STREAM_EVENT && myEvent.getEvent()== StreamingEvent.STREAM_STATE_CHANGED)
+		if (myEvent.getEventType()==StreamingEventType.STREAM_EVENT)
+			if (myEvent.getEvent()== StreamingEvent.STREAM_STATE_CHANGED)
 			{
 			    // All events of type STREAM_EVENT provide a reference to the stream that triggered it.
 			    // In this case we are handling two streams, so we need to check what stream triggered the event.
@@ -230,9 +301,13 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 				    if (areStreamsDeinitialized() && exitFromAppRequest==true) finish();
 				 	break;
 				 }
-			   
+				
 			}
-		     
+			 else if (myEvent.getEvent()== StreamingEvent.STREAM_ERROR)
+			 {
+				 Toast.makeText(getApplicationContext(), myEvent.getInfo(), Toast.LENGTH_LONG).show();
+			 }
+		   
 		return false;
 	}
 
@@ -260,6 +335,12 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 		
 	}
 
+	@Override
+	public void onPause() {
+		super.onPause();
+		Log.d(TAG, "The activity is on Pause state");
+	}
+	
 	@Override
 	public void onPause(String streamId) {
 		Log.d(TAG, "Called onPause request for stream:" + streamId);

@@ -13,10 +13,12 @@ package org.crs4.most.streaming.examples;
 import java.util.List;
 
 import org.crs4.most.streaming.IStream;
+import org.crs4.most.streaming.enums.StreamState;
 
 
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +45,7 @@ public class IStreamArrayAdapter extends ArrayAdapter<IStream> {
             convertView = inflater.inflate(R.layout.istream_row, null);
             viewHolder = new ViewHolder();
             viewHolder.name = (TextView)convertView.findViewById(R.id.textName);
+            viewHolder.uri = (TextView)convertView.findViewById(R.id.textUri);
             viewHolder.videoSize = (TextView) convertView.findViewById(R.id.textSize);
             viewHolder.latency = (TextView) convertView.findViewById(R.id.textLatency);
             viewHolder.status = (TextView)convertView.findViewById(R.id.textState);
@@ -53,17 +56,26 @@ public class IStreamArrayAdapter extends ArrayAdapter<IStream> {
         }
         IStream myStream = getItem(position);
         viewHolder.name.setText(myStream.getName());
+        viewHolder.uri.setText(myStream.getUri());
         if (myStream.getVideoSize()!=null)
         	viewHolder.videoSize.setText(myStream.getVideoSize().toString());
         else
         	viewHolder.videoSize.setText("n.a");
         viewHolder.latency.setText("" + String.valueOf(myStream.getLatency()) + " ms");
         viewHolder.status.setText(myStream.getState().toString());
+        if (myStream.getState()==StreamState.ERROR)
+        	viewHolder.status.setBackgroundColor(Color.RED);
+        else if (myStream.getState()==StreamState.PLAYING_REQUEST)
+        	viewHolder.status.setBackgroundColor(0xFFFFA500); // ORANGE COLOR
+        else
+        	viewHolder.status.setBackgroundColor(Color.GREEN);
+        
         return convertView;
     }
 
     private class ViewHolder {
         public TextView name;
+        public TextView uri;
         public TextView videoSize;
         public TextView latency;
         public TextView status;

@@ -64,15 +64,28 @@ public interface IStream {
 	/**
 	 * Update the uri of the stream
 	 * @param uri the new uri
+	 * @return {@code True} if the uri was successfully updated; {@code False} otherwise.
 	 */
-	public void setUri(String uri);
+	public boolean setUri(String uri);
 	
 	/**
-     * Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
+     * Get the current value of uri property of this stream (it should read the value from native code (if any) to be sure to return the effective uri value)
+     * @return the latency value in ms
+     */
+	public String getUri();
+	
+	/**
+     * Get the current value of latency property of this stream (it should read the value from native code (if any) to be sure to return the effective latency value)
      * @return the latency value in ms
      */
 	public int getLatency();
 	
+	/**
+	 * Set the preferred latency for this stream
+	 * @param latency the preferred latency (in ms)
+	 * @return {@code True} if the new value was accepted;{@code False} otherwise
+	 */
+	public boolean setLatency(int latency);
 	/**
 	 * Destroy this stream
 	 */

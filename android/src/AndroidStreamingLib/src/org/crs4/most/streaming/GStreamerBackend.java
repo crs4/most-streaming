@@ -36,8 +36,9 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	// native methods
     private native boolean nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
-    private native void nativeSetUri(String uri); // Set the URI of the media to play
+    private native boolean nativeSetUri(String uri); // Set the URI of the media to play
     private native int nativeGetLatency(); // Get the latency of the stream to play
+    private native boolean nativeSetLatency(int latency); // Set the latency of the stream to play
     private native void nativePlay();     // Set pipeline to PLAYING
     private native void nativeSetPosition(int milliseconds); // Seek to the indicated position, in milliseconds
     private native void nativePause();    // Set pipeline to PAUSED
@@ -165,6 +166,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
      */
 	public void play() {
 		Log.d(TAG,"Trying to play stream...");
+		this.streamState = StreamState.PLAYING_REQUEST;
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stremm " + this.streamName, this));
 		nativePlay();
 	}
 	
@@ -176,28 +179,9 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		nativePause();
 	}
 	
-	/**
-	 * Update the uri of the stream
-	 * @param uri the new uri
-	 */
-	public void setUri(String uri)
-	{   
-		this.uri = uri;
-		Log.d("GSTREAMER_BACKEND", "Setting uri to:" + this.uri);
-		nativeSetUri(this.uri);
-	}
 	
 	
-    /**
-     * Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
-     * @return the latency value in ms
-     */
-	@Override
-	public int getLatency()
-	{
-		return nativeGetLatency();
-	}
-	
+    
 	
 	@Override
 	public void destroy() {
@@ -242,11 +226,23 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     		this.setUri(this.uri);
     		this.stream_initialized = true;
     		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream " + this.streamName + " initialized: (uri:" +this.uri + ")" , this));
+    	
     	}
     	else{
     		Log.w(TAG, "Stream already initialized.Unexpected callback from gstreamer ?!");
     	}
     		
+    }
+    
+    
+    //Called from the native code when an error occurred
+    private void onStreamError(String info)
+    {   
+    	String  infoMsg = this.getName() + ":" + info;
+    	Log.e(TAG, "Stream Error:" + info);
+    	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, infoMsg , this));
+    	this.streamState = StreamState.ERROR;
+    	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this));
     }
     
     // Called from native code when the streamState of the native stream changes
@@ -329,6 +325,48 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	@Override
 	public StreamState getState() {
 		return this.streamState;
+	}
+	
+	@Override
+	public String getUri() {
+		return this.uri;
+	}
+	
+	/**
+	 * Update the uri of the stream
+	 * @param uri the new uri
+	 * @return {@code True} if the uri was successfully updated; {@code False} otherwise.
+	 */
+	@Override
+	public boolean setUri(String uri)
+	{   
+	
+		Log.d("GSTREAMER_BACKEND", "Setting uri to:" + this.uri);
+		boolean uriUpdated = nativeSetUri(this.uri);
+			if  (uriUpdated)
+			{
+				this.uri = uri;
+			}
+			return uriUpdated;
+	}
+	
+	
+	/**
+     * Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
+     * @return the latency value in ms
+     */
+	@Override
+	public int getLatency()
+	{
+		return nativeGetLatency();
+	}
+	
+	
+	@Override
+	public boolean setLatency(int latency) {
+		Log.d(TAG, "Called setLatency with proposed value:" + latency);
+		boolean result = nativeSetLatency(latency);
+		return result;
 	}
 	
 	 
