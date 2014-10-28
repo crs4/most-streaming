@@ -11,6 +11,7 @@ package org.crs4.most.streaming;
 
 
 
+import org.crs4.most.streaming.enums.StreamProperty;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.utils.Size;
 
@@ -61,38 +62,25 @@ public interface IStream {
 	 */
 	public void pause();
 	
-	/**
-	 * Update the uri of the stream
-	 * @param uri the new uri
-	 * @return {@code True} if the uri was successfully updated; {@code False} otherwise.
-	 */
-	public boolean setUri(String uri);
-	
-	/**
-     * Get the current value of uri property of this stream (it should read the value from native code (if any) to be sure to return the effective uri value)
-     * @return the latency value in ms
-     */
-	public String getUri();
-	
-	/**
-     * Get the current value of latency property of this stream (it should read the value from native code (if any) to be sure to return the effective latency value)
-     * @return the latency value in ms
-     */
-	public int getLatency();
-	
-	/**
-	 * Set the preferred latency for this stream
-	 * @param latency the preferred latency (in ms)
-	 * @return {@code True} if the new value was accepted;{@code False} otherwise
-	 */
-	public boolean setLatency(int latency);
+
 	/**
 	 * Destroy this stream
 	 */
 	public void destroy();
 
-
-	boolean setUriAndLatency(String uri, int latency);
+    /**
+     * Reads the current value of the specified stream property
+     * @param property
+     * @return the value of the property
+     */
+	public String getProperty(StreamProperty property);
+	
+	/**
+	 * Commit the stream properties values specified as argument
+	 * @param properties the stream properties to update
+	 * @return true if no error occurred during the update request; False otherwise
+	 */
+	public boolean commitProperties(StreamProperties properties);
 
 }
 

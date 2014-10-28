@@ -24,6 +24,14 @@ DEINITIALIZING
 
    the stream has being deinitialized
 
+ERROR
+^^^^^
+
+.. java:field:: public static final StreamState ERROR
+   :outertype: StreamState
+
+   The stream is in an inconsistent state
+
 INITIALIZED
 ^^^^^^^^^^^
 
@@ -55,4 +63,12 @@ PLAYING
    :outertype: StreamState
 
    the stream is playing
+
+PLAYING_REQUEST
+^^^^^^^^^^^^^^^
+
+.. java:field:: public static final StreamState PLAYING_REQUEST
+   :outertype: StreamState
+
+   a play request is sent to the stream that is preparing to start playing
 

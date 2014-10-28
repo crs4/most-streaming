@@ -8,8 +8,6 @@
 
 .. java:import:: android.os Handler
 
-.. java:import:: android.provider ContactsContract.CommonDataKinds.Organization
-
 .. java:import:: android.util Log
 
 StreamingLibBackend

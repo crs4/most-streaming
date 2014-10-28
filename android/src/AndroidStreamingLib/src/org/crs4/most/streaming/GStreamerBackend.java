@@ -13,6 +13,7 @@ package org.crs4.most.streaming;
 
 import java.util.HashMap;
 
+import org.crs4.most.streaming.enums.StreamProperty;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
@@ -329,8 +330,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		return this.streamState;
 	}
 	
-	@Override
-	public String getUri() {
+	private String getUri() {
 		return this.uri;
 	}
 	
@@ -339,8 +339,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	 * @param uri the new uri
 	 * @return {@code True} if the uri was successfully updated; {@code False} otherwise.
 	 */
-	@Override
-	public boolean setUri(String uri)
+	private boolean setUri(String uri)
 	{   
 	
 		Log.d("GSTREAMER_BACKEND", "Setting uri to:" + uri);
@@ -357,26 +356,50 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
      * Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
      * @return the latency value in ms
      */
-	@Override
-	public int getLatency()
+	private int getLatency()
 	{
-		return nativeGetLatency();
+		this.latency = nativeGetLatency();
+		return this.latency;
 	}
 	
 	
-	@Override
-	public boolean setLatency(int latency) {
+	
+	private boolean setLatency(int latency) {
 		Log.d(TAG, "Called setLatency with proposed value:" + latency);
 		boolean result = nativeSetLatency(latency);
 		return result;
 	}
 	
-	@Override
-	public boolean setUriAndLatency(String uri, int latency)
+
+	private boolean setUriAndLatency(String uri, int latency)
 	{   Log.d(TAG, "Called setUriAndLatency with proposed uri:" + uri + " latency:" + latency);
 		boolean result = nativeSetUriAndLatency(uri, latency); // Set the URI of the media to play
 		return result;
 	}// Set the URI of the media to play
+	
+	@Override
+	public boolean commitProperties(StreamProperties properties) {
+		String uriProperty = properties.get(StreamProperty.URI);
+		String latencyProperty = properties.get(StreamProperty.LATENCY);
+		if (uriProperty!=null)
+			this.uri = uriProperty;
+		if (latencyProperty!=null)
+		{
+			try{
+				this.latency = Integer.parseInt(latencyProperty);
+			}catch (NumberFormatException e) {}
+			
+		}
+		return setUriAndLatency(this.uri, this.latency);
+	}
+	@Override
+	public String getProperty(StreamProperty property) {
+		if (property==StreamProperty.URI)
+			return this.getUri();
+		else if (property==StreamProperty.LATENCY)
+			return String.valueOf(this.getLatency());
+		return null;
+	}
 }
 
 

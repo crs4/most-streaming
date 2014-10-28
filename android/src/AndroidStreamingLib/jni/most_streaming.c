@@ -672,7 +672,6 @@ static jboolean gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
 	  GST_DEBUG ("Custom data not defined!");
 	  return JNI_FALSE;
 	  }
-
   const jbyte *char_uri = (*env)->GetStringUTFChars (env, uri, NULL);
   GST_DEBUG ("Setting URI:::: %s" , char_uri);
 

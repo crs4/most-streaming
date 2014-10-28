@@ -16,11 +16,19 @@ STREAM_ERROR
 .. java:field:: public static final StreamingEvent STREAM_ERROR
    :outertype: StreamingEvent
 
-   a stream internal state change occurred
+   the size of the video stream changed
 
 STREAM_STATE_CHANGED
 ^^^^^^^^^^^^^^^^^^^^
 
 .. java:field:: public static final StreamingEvent STREAM_STATE_CHANGED
    :outertype: StreamingEvent
+
+VIDEO_SIZE_CHANGED
+^^^^^^^^^^^^^^^^^^
+
+.. java:field:: public static final StreamingEvent VIDEO_SIZE_CHANGED
+   :outertype: StreamingEvent
+
+   a stream internal state change occurred
 

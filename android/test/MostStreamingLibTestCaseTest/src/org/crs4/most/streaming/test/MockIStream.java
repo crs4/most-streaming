@@ -18,9 +18,11 @@ import java.util.TimerTask;
 
 
 import org.crs4.most.streaming.*;
+import org.crs4.most.streaming.enums.StreamProperty;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
+import org.crs4.most.streaming.utils.Size;
 
 //import android.content.Context;
 import android.os.Handler;
@@ -46,6 +48,7 @@ public class MockIStream implements IStream  {
 		switch (streamState){
 			case INITIALIZING: Log.d(TAG, "Stream has being initializing"); break;
 			case INITIALIZED: Log.d(TAG, "Stream initialized"); break;
+			case PLAYING_REQUEST: Log.d(TAG, "Stream is preparing to play"); break;
 			case PLAYING: Log.d(TAG, "Stream is playing"); break;
 			case PAUSED: Log.d(TAG, "Stream is paused"); break;
 			case DEINITIALIZING: Log.d(TAG, "Stream has being deinitialized"); break;
@@ -104,9 +107,9 @@ public class MockIStream implements IStream  {
 
 	@Override
 	public void play() {
-		this.streamState = StreamState.PLAYING;
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream is playing", this));
-		
+		this.streamState = StreamState.PLAYING_REQUEST;
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream is going to play", this));
+		this.changeStateAfter(1, StreamState.PLAYING, "Stream is playing");
 	}
 
 	@Override
@@ -116,17 +119,6 @@ public class MockIStream implements IStream  {
 		
 	}
 
-	@Override
-	public void setUri(String uri) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public int getLatency() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
 
 	@Override
 	public void destroy() {
@@ -149,6 +141,24 @@ public class MockIStream implements IStream  {
 		this.changeStateAfter(1, StreamState.INITIALIZED, "Stream Inizialization Ok");
 		//this.streamState = StreamState.INITIALIZED;
 		//this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream Inizialization Ok",  this));
+	}
+
+	@Override
+	public Size getVideoSize() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getProperty(StreamProperty property) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean commitProperties(StreamProperties properties) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 }

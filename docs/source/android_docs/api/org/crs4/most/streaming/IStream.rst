@@ -1,4 +1,8 @@
+.. java:import:: org.crs4.most.streaming.enums StreamProperty
+
 .. java:import:: org.crs4.most.streaming.enums StreamState
+
+.. java:import:: org.crs4.most.streaming.utils Size
 
 .. java:import:: android.view SurfaceView
 
@@ -14,6 +18,17 @@ IStream
 
 Methods
 -------
+commitProperties
+^^^^^^^^^^^^^^^^
+
+.. java:method:: public boolean commitProperties(StreamProperties properties)
+   :outertype: IStream
+
+   Commit the stream properties values specified as argument
+
+   :param properties: the stream properties to update
+   :return: true if no error occurred during the update request; False otherwise
+
 destroy
 ^^^^^^^
 
@@ -21,16 +36,6 @@ destroy
    :outertype: IStream
 
    Destroy this stream
-
-getLatency
-^^^^^^^^^^
-
-.. java:method:: public int getLatency()
-   :outertype: IStream
-
-   Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
-
-   :return: the latency value in ms
 
 getName
 ^^^^^^^
@@ -40,6 +45,17 @@ getName
 
    :return: the name of this stream
 
+getProperty
+^^^^^^^^^^^
+
+.. java:method:: public String getProperty(StreamProperty property)
+   :outertype: IStream
+
+   Reads the current value of the specified stream property
+
+   :param property:
+   :return: the value of the property
+
 getState
 ^^^^^^^^
 
@@ -47,6 +63,14 @@ getState
    :outertype: IStream
 
    :return: the current state of this stream
+
+getVideoSize
+^^^^^^^^^^^^
+
+.. java:method:: public Size getVideoSize()
+   :outertype: IStream
+
+   :return: the current size of the video stream
 
 pause
 ^^^^^
@@ -73,14 +97,4 @@ prepare
    Prepare the stream by providing a video surface
 
    :param surfaceView: the Surface where to render the stream
-
-setUri
-^^^^^^
-
-.. java:method:: public void setUri(String uri)
-   :outertype: IStream
-
-   Update the uri of the stream
-
-   :param uri: the new uri
 

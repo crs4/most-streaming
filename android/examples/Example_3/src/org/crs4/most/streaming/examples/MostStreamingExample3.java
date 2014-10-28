@@ -15,9 +15,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.crs4.most.streaming.IStream;
+import org.crs4.most.streaming.StreamProperties;
 import org.crs4.most.streaming.StreamingEventBundle;
 import org.crs4.most.streaming.StreamingLib;
 import org.crs4.most.streaming.StreamingLibBackend;
+import org.crs4.most.streaming.enums.StreamProperty;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
@@ -124,7 +126,6 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
         	// Instance the first stream
         	HashMap<String,String> stream1_params = new HashMap<String,String>();
         	stream1_params.put("name", "Stream_1");
-        	//stream1_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
         	stream1_params.put("uri", "http://clips.vorwaerts-gmbh.de/VfE.webm");
         	 
         	this.stream1 = streamingLib.createStream(stream1_params, this.handler);
@@ -206,11 +207,10 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 						
 						
 						final EditText txtUri = (EditText) dialog.findViewById(R.id.editUri);
-						final String currentUri =  selectedStream.getUri();
-						txtUri.setText("http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
-						//txtUri.setText(currentUri);
+						final String currentUri =  selectedStream.getProperty(StreamProperty.URI);
+						txtUri.setText(currentUri);
 						final EditText txtLatency = (EditText) dialog.findViewById(R.id.editLatency);
-						final String currentLatency = String.valueOf(selectedStream.getLatency());
+						final String currentLatency = selectedStream.getProperty(StreamProperty.LATENCY);
 						txtLatency.setText(currentLatency);
 						
 						Button butOk = (Button) dialog.findViewById(R.id.button_ok);
@@ -218,13 +218,10 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 						butOk.setOnClickListener(new OnClickListener() {
 							@Override
 							public void onClick(View v) {
-								
-								if (!txtLatency.getText().toString().equals(currentLatency) || !txtUri.getText().toString().equals(currentUri))
-								{
-									int newLatency = Integer.parseInt(txtLatency.getText().toString());
-									final String newUri = txtUri.getText().toString(); 
-									selectedStream.setUriAndLatency(newUri, newLatency);
-								}
+								StreamProperties props = new StreamProperties();
+								props.add(StreamProperty.URI, txtUri.getText().toString());
+								props.add(StreamProperty.LATENCY, txtLatency.getText().toString());
+								selectedStream.commitProperties(props);
 								
 								dialog.dismiss();
 							}

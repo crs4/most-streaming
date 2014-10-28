@@ -1,12 +1,14 @@
-.. java:import:: java.io FileNotFoundException
-
 .. java:import:: java.util HashMap
+
+.. java:import:: org.crs4.most.streaming.enums StreamProperty
 
 .. java:import:: org.crs4.most.streaming.enums StreamState
 
 .. java:import:: org.crs4.most.streaming.enums StreamingEvent
 
 .. java:import:: org.crs4.most.streaming.enums StreamingEventType
+
+.. java:import:: org.crs4.most.streaming.utils Size
 
 .. java:import:: android.content Context
 
@@ -40,26 +42,28 @@ GStreamerBackend
 
 Methods
 -------
+commitProperties
+^^^^^^^^^^^^^^^^
+
+.. java:method:: @Override public boolean commitProperties(StreamProperties properties)
+   :outertype: GStreamerBackend
+
 destroy
 ^^^^^^^
 
 .. java:method:: @Override public void destroy()
    :outertype: GStreamerBackend
 
-getLatency
-^^^^^^^^^^
-
-.. java:method:: @Override public int getLatency()
-   :outertype: GStreamerBackend
-
-   Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
-
-   :return: the latency value in ms
-
 getName
 ^^^^^^^
 
 .. java:method:: @Override public String getName()
+   :outertype: GStreamerBackend
+
+getProperty
+^^^^^^^^^^^
+
+.. java:method:: @Override public String getProperty(StreamProperty property)
    :outertype: GStreamerBackend
 
 getState
@@ -75,6 +79,12 @@ getSurfaceView
    :outertype: GStreamerBackend
 
    :return: the rendering Surface
+
+getVideoSize
+^^^^^^^^^^^^
+
+.. java:method:: @Override public Size getVideoSize()
+   :outertype: GStreamerBackend
 
 pause
 ^^^^^
@@ -97,16 +107,6 @@ prepare
 
 .. java:method:: @Override public void prepare(SurfaceView surface)
    :outertype: GStreamerBackend
-
-setUri
-^^^^^^
-
-.. java:method:: public void setUri(String uri)
-   :outertype: GStreamerBackend
-
-   Update the uri of the stream
-
-   :param uri: the new uri
 
 surfaceChanged
 ^^^^^^^^^^^^^^

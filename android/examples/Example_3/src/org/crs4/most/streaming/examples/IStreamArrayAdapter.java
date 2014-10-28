@@ -13,6 +13,7 @@ package org.crs4.most.streaming.examples;
 import java.util.List;
 
 import org.crs4.most.streaming.IStream;
+import org.crs4.most.streaming.enums.StreamProperty;
 import org.crs4.most.streaming.enums.StreamState;
 
 
@@ -56,12 +57,12 @@ public class IStreamArrayAdapter extends ArrayAdapter<IStream> {
         }
         IStream myStream = getItem(position);
         viewHolder.name.setText(myStream.getName());
-        viewHolder.uri.setText(myStream.getUri());
+        viewHolder.uri.setText(myStream.getProperty(StreamProperty.URI));
         if (myStream.getVideoSize()!=null)
         	viewHolder.videoSize.setText(myStream.getVideoSize().toString());
         else
         	viewHolder.videoSize.setText("n.a");
-        viewHolder.latency.setText("" + String.valueOf(myStream.getLatency()) + " ms");
+        viewHolder.latency.setText("" + myStream.getProperty(StreamProperty.LATENCY)+ " ms");
         viewHolder.status.setText(myStream.getState().toString());
         if (myStream.getState()==StreamState.ERROR)
         	viewHolder.status.setBackgroundColor(Color.RED);

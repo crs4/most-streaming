@@ -71,6 +71,7 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 			this.expectedStates = new StreamState[] {
 					StreamState.INITIALIZING,
 					StreamState.INITIALIZED,
+					StreamState.PLAYING_REQUEST,
 					StreamState.PLAYING,
 					StreamState.PAUSED,
 					StreamState.DEINITIALIZING,
