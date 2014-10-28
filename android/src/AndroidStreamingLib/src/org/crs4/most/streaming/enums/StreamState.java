@@ -17,6 +17,12 @@ public enum StreamState {
     INITIALIZED,
     
     /**
+     * a play request is sent to the stream that is preparing to start playing
+     */
+    PLAYING_REQUEST,
+    
+    
+    /**
      * the stream is playing
      */
     PLAYING,
@@ -30,5 +36,10 @@ public enum StreamState {
    	 * the stream has being deinitialized
    	 */
     DEINITIALIZING,
+    
+    /**
+     * The stream is in an inconsistent state
+     */
+    ERROR
  
 }

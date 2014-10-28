@@ -1,6 +1,6 @@
 # examples data
 uri.properties.default
-
+.settings/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

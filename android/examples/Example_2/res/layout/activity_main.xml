@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     android:layout_marginBottom="16dip"
+     android:gravity="top|center_horizontal"
+     android:orientation="vertical" >
+  
+     <RelativeLayout
+         android:layout_width="match_parent"
+     	  android:layout_height="wrap_content"
+     	  android:orientation="horizontal" 
+         >
+         
+         <ImageButton
+           android:id="@+id/button_exit"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:contentDescription="@string/button_exit"
+           android:src="@android:drawable/ic_lock_power_off"
+           android:layout_alignRight="@+id/textview_message"
+           android:layout_toRightOf="@+id/button_exit"
+           android:text="@string/button_exit" />
+         
+      <TextView
+          android:id="@+id/textview_message"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginBottom="16dip"
+          
+          android:text="@string/event_log" />
+     
+     </RelativeLayout>
+      
+        <FrameLayout
+            android:id="@+id/container_stream_1"
+            android:layout_height="0px"
+            android:layout_width="match_parent"
+            android:layout_weight="1" />
+
+        <FrameLayout
+            android:id="@+id/container_stream_2"
+            android:layout_height="0px"
+            android:layout_width="match_parent"
+            android:layout_weight="1" />
+    
+
+</LinearLayout>

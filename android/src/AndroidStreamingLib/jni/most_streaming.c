@@ -72,8 +72,10 @@ static jmethodID set_current_position_method_id;
 static jmethodID on_gstreamer_initialized_method_id;
 static jmethodID on_media_size_changed_method_id;
 static jmethodID on_stream_state_changed_method_id;
+static jmethodID on_stream_error_method_id;
 
 static int streams_count = 0; // Streams reference counter used to finalize global references when all streams have been deallocated
+
 
 //static jobject global_app;                  /* Application instance, used to call its methods. A global reference is kept. */
 /*
@@ -120,6 +122,21 @@ static void send_on_stream_state_changed_notification(CustomData *data, GstState
 {  	GST_DEBUG ("Calling send_on_stream_state_changed_notifications");
 	JNIEnv *env = get_jni_env ();
 	(*env)->CallVoidMethod (env, data->app, on_stream_state_changed_method_id, (jint) old_state, (jint) new_state);
+	if ((*env)->ExceptionCheck (env)) {
+			 GST_ERROR ("Failed to call Java method");
+			 (*env)->ExceptionClear (env);
+		 }
+}
+
+static void send_on_stream_error_notification(CustomData *data, const gchar *message)
+{  	JNIEnv *env = get_jni_env ();
+	 jstring jmessage = (*env)->NewStringUTF(env, message);
+	 (*env)->CallVoidMethod (env, data->app, on_stream_error_method_id, jmessage);
+	 if ((*env)->ExceptionCheck (env)) {
+		 GST_ERROR ("Failed to call Java method");
+		 (*env)->ExceptionClear (env);
+	 }
+	 (*env)->DeleteLocalRef (env, jmessage);
 }
 
 
@@ -226,10 +243,10 @@ static void error_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   g_clear_error (&err);
   g_free (debug_info);
   set_ui_message (message_string, data);
+  send_on_stream_error_notification(data, message_string);
   g_free (message_string);
   gst_element_set_state (data->pipeline, GST_STATE_NULL);
   data->target_state = GST_STATE_NULL;
-  //send_on_stream_state_changed_notification(data);
 }
 
 /* Called when the End Of the Stream is reached. Just move to the beginning of the media and pause. */
@@ -276,9 +293,23 @@ static void clock_lost_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 }
 
 /* Called after the pipeline source has been created */
+static void playbinNotifyLatency(GstBin *bin, CustomData *data){
+	GST_DEBUG("*** Called playbinNotifyLatency ****");
+	GstElement *source;
+	g_object_get(bin, "source", &source, NULL);
+	GValue currentLatencyVal = G_VALUE_INIT;
+	g_value_init (&currentLatencyVal, G_TYPE_INT);
+	g_object_get_property(source, "latency", &currentLatencyVal);
+	int latencyInt = g_value_get_int(&currentLatencyVal);
+	GST_DEBUG("Current latency value is:%d" , latencyInt);
+}
+
+
+/* Called after the pipeline source has been created */
 static void playbinNotifySource(GObject *o, GstMessage *msg, CustomData *data) {
 
 		GST_DEBUG("Called playbinNotifySource");
+		GST_DEBUG("Called playbinNotifySource; Stream is in state: %d target:%d" , data->state, data->target_state);
 	    GstElement *source;
 	    g_object_get(o, "source", &source, NULL);
         gint latency = data->latency;
@@ -302,7 +333,7 @@ static void playbinNotifySource(GObject *o, GstMessage *msg, CustomData *data) {
 	    //
 
 		if (latencyInt-data->latency==0)
-		 GST_DEBUG("Data Latency successfully updates");
+		 GST_DEBUG("Data Latency successfully updated");
 		else
 		{
 		GST_ERROR("Problems updating the latency: current value: %d Expected: %d" ,   latencyInt ,data->latency);
@@ -354,6 +385,7 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   /* Only pay attention to messages coming from the pipeline, not its children */
   if (GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
     data->state = new_state;
+    // state changed...
     gchar *message = g_strdup_printf("State changed to %s", gst_element_state_get_name(new_state));
     set_ui_message(message, data);
     send_on_stream_state_changed_notification(data, old_state, new_state);
@@ -448,6 +480,8 @@ static void *app_function (void *userdata) {
 
   // connect to pipeline for setting varoius properties
   g_signal_connect (G_OBJECT (data->pipeline),"source-setup", (GCallback) playbinNotifySource, data);
+  g_signal_connect(G_OBJECT(data->pipeline),"do-latency", (GCallback) playbinNotifyLatency, data);
+
   gst_object_unref (bus);
 
   /* Register a function that GLib will call 4 times per second */
@@ -504,7 +538,8 @@ static jboolean gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name,
   pthread_create (&data->gst_app_thread, NULL, &app_function, data);
 
   streams_count++;
-  GST_DEBUG ("STREAM_COUNT: %d " , streams_count);
+
+  GST_DEBUG ("STREAM COUNT: %d " , streams_count);
 
   return JNI_TRUE;
 }
@@ -512,7 +547,12 @@ static jboolean gst_native_init (JNIEnv* env, jobject thiz, jstring stream_name,
 /* Quit the main loop, remove the native thread and free resources */
 static void gst_native_finalize (JNIEnv* env, jobject thiz) {
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-  if (!data) return;
+  if (!data)
+	  {
+	  GST_DEBUG ("Data is null!! Quitting main loop without doing anything!!!");
+	  return;
+	  }
+
   GST_DEBUG ("Quitting main loop...");
   g_main_loop_quit (data->main_loop);
   GST_DEBUG ("Waiting for thread to finish...");
@@ -520,9 +560,14 @@ static void gst_native_finalize (JNIEnv* env, jobject thiz) {
   streams_count--;
   GST_DEBUG ("STREAM COUNT: %d " , streams_count);
 
+  // send notification about the stream destruction
+  GST_DEBUG ("NOTIFYING STATE CHANGE...");
+  // the stream thread was destroyed, so we send notification about the finalization of the stream itself
+  send_on_stream_state_changed_notification(data, 2, 1);
+
   if (streams_count<=0)
   {
-	  GST_DEBUG ("STREAM_COUNT: Deallocate global variables!! ");
+	  GST_DEBUG ("STREAM COUNT <=0: Deallocate global variables!! ");
 	  streams_count = 0;
 	  GST_DEBUG ("IN gst_native_finalize_globals ");
 	  CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
@@ -538,33 +583,114 @@ static void gst_native_finalize (JNIEnv* env, jobject thiz) {
 
 }
 
+static void reset_to_ready_state(CustomData *data)
+{
+	if (!data) return;
+
+	 if ( data->target_state >= GST_STATE_READY)
+		 		    gst_element_set_state (data->pipeline, GST_STATE_READY);
+
+	 data->duration = GST_CLOCK_TIME_NONE;
+	 data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+	}
+
+/* Set playbin's preferred latency */
+static jboolean gst_native_set_latency (JNIEnv* env, jobject thiz, jint latency) {
+	GST_DEBUG ("called gst_native_set_latency with proposed value:%d" , latency);
+
+	  CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+	  if (!data || !data->pipeline)
+		  {
+		  GST_DEBUG ("Custom data not defined!");
+		  return JNI_FALSE;
+		  }
+	  else if(latency<0)
+	  {
+		  GST_WARNING("Invalid latency value passed:%d" , latency);
+		  return JNI_FALSE;
+	  }
+	  data->latency = (gint) latency;
+	  GST_DEBUG ("Setting preferred Latency  %d for stream:%s" , data->latency,data->stream_name);
+	  GST_DEBUG ("Resetting to READY state for updating latency.");
+	  GST_DEBUG ("Stream name is:%s ", data->stream_name);
+
+
+
+	  return JNI_TRUE;
+}
+
+
+
+/* Set playbin's URI and latency */
+static jboolean gst_native_set_uri_and_latency (JNIEnv* env, jobject thiz, jstring uri, jint latency)
+{
+	 CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+	  if (!data || !data->pipeline)
+		  {
+		  GST_DEBUG ("Custom data not defined!");
+		  return JNI_FALSE;
+		  }
+
+	  if (latency>0)
+	  {
+		  data->latency = (gint) latency;
+	  }
+
+	  const jbyte *char_uri = (*env)->GetStringUTFChars (env, uri, NULL);
+	  GST_DEBUG ("Setting URI:::: %s" , char_uri);
+
+
+	  GST_DEBUG ("Stream name is:%s ", data->stream_name);
+
+
+	      // stop the stream if  it is playing
+		  if (data->target_state >= GST_STATE_READY)
+		     gst_element_set_state (data->pipeline, GST_STATE_READY);
+
+		  	  // set the new uri
+		  	   g_object_set(data->pipeline, "uri", char_uri, NULL);
+
+
+		   data->duration = GST_CLOCK_TIME_NONE;
+		   // resume the target state of the stream
+		   data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+
+
+	  (*env)->ReleaseStringUTFChars (env, uri, char_uri);
+	  	   //(*env)->ReleaseStringUTFChars (env, data->stream_name, char_stream);
+
+	  return JNI_TRUE;
+}
 
 /* Set playbin's URI */
-static void gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
+static jboolean gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
    GST_DEBUG ("called gst_native_set_uri!!!!");
 
   CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
   if (!data || !data->pipeline)
 	  {
 	  GST_DEBUG ("Custom data not defined!");
-	  return;
+	  return JNI_FALSE;
 	  }
-
   const jbyte *char_uri = (*env)->GetStringUTFChars (env, uri, NULL);
   GST_DEBUG ("Setting URI:::: %s" , char_uri);
 
 
-  GST_DEBUG ("Stream name is:%s", data->stream_name);
+  GST_DEBUG ("Stream name is:%s ", data->stream_name);
 
-  if (data->target_state >= GST_STATE_READY)
-    gst_element_set_state (data->pipeline, GST_STATE_READY);
-  g_object_set(data->pipeline, "uri", char_uri, NULL);
+	  if (data->target_state >= GST_STATE_READY)
+	     gst_element_set_state (data->pipeline, GST_STATE_READY);
+
+	   g_object_set(data->pipeline, "uri", char_uri, NULL);
+
+	   data->duration = GST_CLOCK_TIME_NONE;
+	   data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+
 
   (*env)->ReleaseStringUTFChars (env, uri, char_uri);
-  //(*env)->ReleaseStringUTFChars (env, data->stream_name, char_stream);
+  	   //(*env)->ReleaseStringUTFChars (env, data->stream_name, char_stream);
 
-  data->duration = GST_CLOCK_TIME_NONE;
-  data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+  return JNI_TRUE;
 }
 
 
@@ -576,8 +702,15 @@ static jint gst_native_get_latency (JNIEnv* env, jobject thiz) {
 		  GST_DEBUG ("Custom data not defined!");
 		  return -1;
 		  }
+	  GstElement *source;
+	  g_object_get(data->pipeline, "source", &source, NULL);
+	  	GValue currentLatencyVal = G_VALUE_INIT;
+	  	g_value_init (&currentLatencyVal, G_TYPE_INT);
+	  	g_object_get_property(source, "latency", &currentLatencyVal);
+	  	int latencyInt = g_value_get_int(&currentLatencyVal);
+	  	GST_DEBUG("Current latency value is:%d" , latencyInt);
 
-	return data->latency;
+	return latencyInt;
 }
 
 
@@ -620,8 +753,9 @@ static jboolean gst_native_class_init (JNIEnv* env, jclass klass) {
   on_gstreamer_initialized_method_id = (*env)->GetMethodID (env, klass, "onGStreamerInitialized", "()V");
   on_media_size_changed_method_id = (*env)->GetMethodID (env, klass, "onMediaSizeChanged", "(II)V");
   on_stream_state_changed_method_id = (*env)->GetMethodID (env, klass, "onStreamStateChanged", "(II)V");
+  on_stream_error_method_id = (*env)->GetMethodID (env, klass, "onStreamError", "(Ljava/lang/String;)V");
 
-  if (!custom_data_field_id || !set_message_method_id || !on_gstreamer_initialized_method_id ||
+  if (!custom_data_field_id || !set_message_method_id || !on_gstreamer_initialized_method_id || ! on_stream_error_method_id ||
       !on_media_size_changed_method_id || !set_current_position_method_id || !on_stream_state_changed_method_id) {
     /* We emit this message through the Android log instead of the GStreamer log because the later
      * has not been initialized yet.
@@ -681,7 +815,10 @@ static JNINativeMethod native_methods[] = {
   { "nativeInit", "(Ljava/lang/String;I)Z", (void *) gst_native_init},
   { "nativeFinalize", "()V", (void *) gst_native_finalize},
   { "nativeGetLatency", "()I", (void *) gst_native_get_latency},
-  { "nativeSetUri", "(Ljava/lang/String;)V", (void *) gst_native_set_uri},
+  { "nativeSetLatency", "(I)Z", (void *) gst_native_set_latency},
+  { "nativeSetUri", "(Ljava/lang/String;)Z", (void *) gst_native_set_uri},
+  { "nativeSetUriAndLatency", "(Ljava/lang/String;I)Z", (void *) gst_native_set_uri_and_latency},
+
   { "nativePlay", "()V", (void *) gst_native_play},
   { "nativePause", "()V", (void *) gst_native_pause},
   { "nativeSetPosition", "(I)V", (void*) gst_native_set_position},

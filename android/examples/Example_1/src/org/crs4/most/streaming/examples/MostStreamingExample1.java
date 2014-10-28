@@ -28,7 +28,8 @@ import android.widget.TextView;
 
 import org.crs4.most.streaming.IStream;
 import org.crs4.most.streaming.StreamingEventBundle;
-import org.crs4.most.streaming.StreamingFactory;
+import org.crs4.most.streaming.StreamingLib;
+import org.crs4.most.streaming.StreamingLibBackend;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
@@ -36,7 +37,7 @@ import org.crs4.most.streaming.enums.StreamingEventType;
  
 /**
  * This example shows how to get an instance of an IStream object for playing and pausing a video stream on an android surface.
- * After the application started, an IStream object is created by calling the library factory method {@link StreamingFactory#getIStream()}. Then the stream is initialized by
+ * After the application started, an IStream object is created by calling the library factory method {@link StreamingLib#createStream(HashMap, Handler)}. Then the stream is initialized by
  * calling the method {@link IStream#prepare(android.content.Context, SurfaceView, HashMap, Handler)} and the event notifications sent
  * to the application handler (this application itself in this example). 
  * Once the handler received the event {@link StreamingEvent#STREAM_STATE_CHANGED}, it checks for the current {@link StreamState} and, if the state is equal to
@@ -47,8 +48,7 @@ import org.crs4.most.streaming.enums.StreamingEventType;
 public class MostStreamingExample1 extends Activity implements Handler.Callback {
     
 	private static final String TAG = "MostStreamingExample1";
-	
-	
+
 	// The stream object 
 	private IStream myStream = null;
 	
@@ -111,7 +111,7 @@ public class MostStreamingExample1 extends Activity implements Handler.Callback 
         
         runExample();
 
-    } // emd of onCreate
+    } // end of onCreate
 
     private void changeButtonsState(boolean enabled)
     {
@@ -134,12 +134,20 @@ public class MostStreamingExample1 extends Activity implements Handler.Callback 
     {
     	// Get a new instance of the stream by using the factory class
     	txtView.setText("Getting IStreamInstance,,,");
-    	this.myStream = StreamingFactory.getIStream();
-    	txtView.setText("Preparing stream");
+    	
+        
     	
     	try {
+    		
+    		StreamingLib streamingLib = new StreamingLibBackend();
+    		streamingLib.initLib(this.getApplicationContext());
+    		
+    		this.myStream = streamingLib.createStream(getConfigParams(), this.handler);
+        	txtView.setText("Preparing stream");
+        	
     		// initialize the stream
-			this.myStream.prepare(this.getApplicationContext(), (SurfaceView) findViewById(R.id.surfaceView1), getConfigParams(), this.handler);
+			this.myStream.prepare((SurfaceView) findViewById(R.id.surfaceView1));
+			
 		} catch (Exception e) {
 			this.txtView.setText("Error preparing stream:" + e.getMessage());
 			e.printStackTrace();
@@ -192,7 +200,14 @@ public class MostStreamingExample1 extends Activity implements Handler.Callback 
 			     {
 			    	 this.changeButtonsState(false);
 			     }
+			   
 			}
+		else if (myEvent.getEvent()==StreamingEvent.STREAM_ERROR)
+		{
+			// notify the user about the event error and the new Stream state.
+			this.txtView.setText("Stream Error:" + infoMsg + " Stream State:" + ((IStream) myEvent.getData()).getState());
+		}
+		 
 		     
 		return false;
 	}
