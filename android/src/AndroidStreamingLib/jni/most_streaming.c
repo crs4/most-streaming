@@ -76,6 +76,7 @@ static jmethodID on_stream_error_method_id;
 
 static int streams_count = 0; // Streams reference counter used to finalize global references when all streams have been deallocated
 
+
 //static jobject global_app;                  /* Application instance, used to call its methods. A global reference is kept. */
 /*
  * Private methods
@@ -384,6 +385,7 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   /* Only pay attention to messages coming from the pipeline, not its children */
   if (GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
     data->state = new_state;
+    // state changed...
     gchar *message = g_strdup_printf("State changed to %s", gst_element_state_get_name(new_state));
     set_ui_message(message, data);
     send_on_stream_state_changed_notification(data, old_state, new_state);
@@ -581,6 +583,17 @@ static void gst_native_finalize (JNIEnv* env, jobject thiz) {
 
 }
 
+static void reset_to_ready_state(CustomData *data)
+{
+	if (!data) return;
+
+	 if ( data->target_state >= GST_STATE_READY)
+		 		    gst_element_set_state (data->pipeline, GST_STATE_READY);
+
+	 data->duration = GST_CLOCK_TIME_NONE;
+	 data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+	}
+
 /* Set playbin's preferred latency */
 static jboolean gst_native_set_latency (JNIEnv* env, jobject thiz, jint latency) {
 	GST_DEBUG ("called gst_native_set_latency with proposed value:%d" , latency);
@@ -599,16 +612,55 @@ static jboolean gst_native_set_latency (JNIEnv* env, jobject thiz, jint latency)
 	  data->latency = (gint) latency;
 	  GST_DEBUG ("Setting preferred Latency  %d for stream:%s" , data->latency,data->stream_name);
 	  GST_DEBUG ("Resetting to READY state for updating latency.");
+	  GST_DEBUG ("Stream name is:%s ", data->stream_name);
 
-	  if (data->target_state >= GST_STATE_READY)
-	    gst_element_set_state (data->pipeline, GST_STATE_READY);
 
-	  data->duration = GST_CLOCK_TIME_NONE;
-	  data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
 
 	  return JNI_TRUE;
 }
 
+
+
+/* Set playbin's URI and latency */
+static jboolean gst_native_set_uri_and_latency (JNIEnv* env, jobject thiz, jstring uri, jint latency)
+{
+	 CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+	  if (!data || !data->pipeline)
+		  {
+		  GST_DEBUG ("Custom data not defined!");
+		  return JNI_FALSE;
+		  }
+
+	  if (latency>0)
+	  {
+		  data->latency = (gint) latency;
+	  }
+
+	  const jbyte *char_uri = (*env)->GetStringUTFChars (env, uri, NULL);
+	  GST_DEBUG ("Setting URI:::: %s" , char_uri);
+
+
+	  GST_DEBUG ("Stream name is:%s ", data->stream_name);
+
+
+	      // stop the stream if  it is playing
+		  if (data->target_state >= GST_STATE_READY)
+		     gst_element_set_state (data->pipeline, GST_STATE_READY);
+
+		  	  // set the new uri
+		  	   g_object_set(data->pipeline, "uri", char_uri, NULL);
+
+
+		   data->duration = GST_CLOCK_TIME_NONE;
+		   // resume the target state of the stream
+		   data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+
+
+	  (*env)->ReleaseStringUTFChars (env, uri, char_uri);
+	  	   //(*env)->ReleaseStringUTFChars (env, data->stream_name, char_stream);
+
+	  return JNI_TRUE;
+}
 
 /* Set playbin's URI */
 static jboolean gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
@@ -625,17 +677,19 @@ static jboolean gst_native_set_uri (JNIEnv* env, jobject thiz, jstring uri) {
   GST_DEBUG ("Setting URI:::: %s" , char_uri);
 
 
-  GST_DEBUG ("Stream name is:%s", data->stream_name);
+  GST_DEBUG ("Stream name is:%s ", data->stream_name);
 
-  if (data->target_state >= GST_STATE_READY)
-    gst_element_set_state (data->pipeline, GST_STATE_READY);
-  g_object_set(data->pipeline, "uri", char_uri, NULL);
+	  if (data->target_state >= GST_STATE_READY)
+	     gst_element_set_state (data->pipeline, GST_STATE_READY);
+
+	   g_object_set(data->pipeline, "uri", char_uri, NULL);
+
+	   data->duration = GST_CLOCK_TIME_NONE;
+	   data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+
 
   (*env)->ReleaseStringUTFChars (env, uri, char_uri);
-  //(*env)->ReleaseStringUTFChars (env, data->stream_name, char_stream);
-
-  data->duration = GST_CLOCK_TIME_NONE;
-  data->is_live = (gst_element_set_state (data->pipeline, data->target_state) == GST_STATE_CHANGE_NO_PREROLL);
+  	   //(*env)->ReleaseStringUTFChars (env, data->stream_name, char_stream);
 
   return JNI_TRUE;
 }
@@ -764,6 +818,8 @@ static JNINativeMethod native_methods[] = {
   { "nativeGetLatency", "()I", (void *) gst_native_get_latency},
   { "nativeSetLatency", "(I)Z", (void *) gst_native_set_latency},
   { "nativeSetUri", "(Ljava/lang/String;)Z", (void *) gst_native_set_uri},
+  { "nativeSetUriAndLatency", "(Ljava/lang/String;I)Z", (void *) gst_native_set_uri_and_latency},
+
   { "nativePlay", "()V", (void *) gst_native_play},
   { "nativePause", "()V", (void *) gst_native_pause},
   { "nativeSetPosition", "(I)V", (void*) gst_native_set_position},

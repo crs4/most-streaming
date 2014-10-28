@@ -91,5 +91,8 @@ public interface IStream {
 	 */
 	public void destroy();
 
+
+	boolean setUriAndLatency(String uri, int latency);
+
 }
 

@@ -37,6 +37,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     private native boolean nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
     private native boolean nativeSetUri(String uri); // Set the URI of the media to play
+    private native boolean nativeSetUriAndLatency(String uri, int latency); // Set the URI of the media to play
     private native int nativeGetLatency(); // Get the latency of the stream to play
     private native boolean nativeSetLatency(int latency); // Set the latency of the stream to play
     private native void nativePlay();     // Set pipeline to PLAYING
@@ -304,11 +305,12 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
             int height) {
         Log.d("GStreamer", "Surface changed to format " + format + " width "
                 + width + " height " + height);
-        this.surfaceInit(holder.getSurface());
+        //this.surfaceInit(holder.getSurface());
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d("GStreamer", "Surface created: " + holder.getSurface());
+        this.surfaceInit(holder.getSurface());
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
@@ -341,8 +343,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	public boolean setUri(String uri)
 	{   
 	
-		Log.d("GSTREAMER_BACKEND", "Setting uri to:" + this.uri);
-		boolean uriUpdated = nativeSetUri(this.uri);
+		Log.d("GSTREAMER_BACKEND", "Setting uri to:" + uri);
+		boolean uriUpdated = nativeSetUri(uri);
 			if  (uriUpdated)
 			{
 				this.uri = uri;
@@ -369,7 +371,12 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		return result;
 	}
 	
-	 
+	@Override
+	public boolean setUriAndLatency(String uri, int latency)
+	{   Log.d(TAG, "Called setUriAndLatency with proposed uri:" + uri + " latency:" + latency);
+		boolean result = nativeSetUriAndLatency(uri, latency); // Set the URI of the media to play
+		return result;
+	}// Set the URI of the media to play
 }
 
 

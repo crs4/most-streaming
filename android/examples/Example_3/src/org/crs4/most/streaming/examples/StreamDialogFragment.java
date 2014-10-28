@@ -31,6 +31,16 @@ public class StreamDialogFragment extends DialogFragment {
 	 {
 		 return getArguments().getString(FRAGMENT_STREAM_ID_KEY);
 	 }
+	 
+	 private String getStreamUri()
+	 {
+		 return getArguments().getString(FRAGMENT_STREAM_URI_KEY);
+	 }
+	 
+	 private int getStreamLatency()
+	 {
+		 return getArguments().getInt(FRAGMENT_STREAM_LATENCY_KEY);
+	 }
 	
 	 /* The activity that creates an instance of this dialog fragment must
      * implement this interface in order to receive event callbacks.
@@ -71,17 +81,17 @@ public class StreamDialogFragment extends DialogFragment {
         // Inflate and set the layout for the dialog
         // Pass null as the parent view because its going in the dialog layout
         builder.setView(inflater.inflate(R.layout.istream_popup_editor, null));
-
+         
         builder.setTitle(getStreamId());
         builder.setMessage("Prova")
                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                    public void onClick(DialogInterface dialog, int id) {
-                       // FIRE ZE MISSILES!
+                	   dismiss();
                    }
                })
                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                    public void onClick(DialogInterface dialog, int id) {
-                       // User cancelled the dialog
+                       dismiss();
                    }
                });
         // Create the AlertDialog object and return it

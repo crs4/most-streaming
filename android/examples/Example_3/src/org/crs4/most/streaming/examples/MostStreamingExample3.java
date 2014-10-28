@@ -11,6 +11,8 @@ package org.crs4.most.streaming.examples;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.crs4.most.streaming.IStream;
 import org.crs4.most.streaming.StreamingEventBundle;
@@ -25,6 +27,7 @@ import org.crs4.most.streaming.examples.StreamDialogFragment.StreamDialogListene
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.os.Handler;
@@ -121,7 +124,9 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
         	// Instance the first stream
         	HashMap<String,String> stream1_params = new HashMap<String,String>();
         	stream1_params.put("name", "Stream_1");
-        	stream1_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
+        	//stream1_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
+        	stream1_params.put("uri", "http://clips.vorwaerts-gmbh.de/VfE.webm");
+        	 
         	this.stream1 = streamingLib.createStream(stream1_params, this.handler);
         	Log.d(TAG,"STREAM 1 INSTANCE");
         	// Instance the first StreamViewer fragment where to render the first stream by passing the stream name as its ID.
@@ -187,26 +192,23 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 					public void onItemClick(AdapterView<?> parent, View view,
 							int position, long id) {
 						Log.d(TAG, "SELECTED ITEM:" + String.valueOf(position));
-						// Toast.makeText(getApplicationContext(),"Premuta riga:" + String.valueOf(position), Toast.LENGTH_LONG).show();
 						
-							final IStream selectedStream = streamsArray.get(position-1);
-						    DialogFragment newFragment = StreamDialogFragment.newInstance(selectedStream.getName(), selectedStream.getUri(),
-						    													selectedStream.getLatency());
-						    newFragment.show(getFragmentManager(), "streamDialog");
-						 /*
+						    // Create and show the dialog.
+						    final IStream selectedStream = streamsArray.get(position-1);
+						   
 						// custom dialog
 						final Dialog dialog = new Dialog(MostStreamingExample3.this);
 						dialog.setContentView(R.layout.istream_popup_editor);
 						
-						final IStream selectedStream = streamsArray.get(position-1);
+						
 						
 						dialog.setTitle(selectedStream.getName() + " [" + selectedStream.getState()+"]");
 						
 						
-						EditText txtUri = (EditText) dialog.findViewById(R.id.editUri);
+						final EditText txtUri = (EditText) dialog.findViewById(R.id.editUri);
 						final String currentUri =  selectedStream.getUri();
-						txtUri.setText(currentUri);
-						
+						txtUri.setText("http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
+						//txtUri.setText(currentUri);
 						final EditText txtLatency = (EditText) dialog.findViewById(R.id.editLatency);
 						final String currentLatency = String.valueOf(selectedStream.getLatency());
 						txtLatency.setText(currentLatency);
@@ -216,14 +218,14 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 						butOk.setOnClickListener(new OnClickListener() {
 							@Override
 							public void onClick(View v) {
-								if (!txtLatency.getText().toString().equals(currentLatency))
+								
+								if (!txtLatency.getText().toString().equals(currentLatency) || !txtUri.getText().toString().equals(currentUri))
 								{
-									int currentLatencyValue = Integer.parseInt(txtLatency.getText().toString());
-									 selectedStream.setLatency(currentLatencyValue);
+									int newLatency = Integer.parseInt(txtLatency.getText().toString());
+									final String newUri = txtUri.getText().toString(); 
+									selectedStream.setUriAndLatency(newUri, newLatency);
 								}
-								else{
-									Log.d(TAG, "No latency value changed");
-								}
+								
 								dialog.dismiss();
 							}
 						});
@@ -240,7 +242,7 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 						
 						
 						dialog.show();
-						  */
+					 
 						}// end of onItemClick
 	            	} 
 	            	 
@@ -361,6 +363,12 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 	public void onPause() {
 		super.onPause();
 		Log.d(TAG, "The activity is on Pause state");
+	}
+	
+	@Override
+	public void onStop() {
+		super.onStop();
+		Log.d(TAG, "The activity is on Stop state");
 	}
 	
 	@Override
