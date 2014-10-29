@@ -62,9 +62,9 @@ import android.widget.Toast;
  *  
  *
  */
-public class MostStreamingExample3 extends Activity implements Handler.Callback, IStreamFragmentCommandListener, StreamDialogListener  {
+public class MostStreamingExample3 extends Activity implements Handler.Callback, IStreamFragmentCommandListener {
 	
-	private static final String TAG = "Example2_MainActivity";
+	private static final String TAG = "MostStreamingExample3";
 	
 	private ArrayList<IStream> streamsArray = null;
 	private ArrayAdapter<IStream> streamsArrayAdapter = null;
@@ -91,7 +91,7 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 		 return true;
 	    }
 	 
-	 @Override
+	 	@Override
 	    public boolean onOptionsItemSelected(MenuItem item)
 	    {
 	    	//check selected menu item
@@ -174,7 +174,7 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 	    {
 	    		this.streamsArray = new ArrayList<IStream>();
 	    		final ListView streamsView = (ListView) findViewById(R.id.listStreams);
-	            this.streamsArray= new ArrayList<IStream>();
+	            
 	            
 	            this.streamsArrayAdapter = new IStreamArrayAdapter(this, R.layout.istream_row, this.streamsArray);
 	            
@@ -207,10 +207,10 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 						
 						
 						final EditText txtUri = (EditText) dialog.findViewById(R.id.editUri);
-						final String currentUri =  selectedStream.getProperty(StreamProperty.URI);
+						final String currentUri =  selectedStream.getProperty(StreamProperty.URI).toString();
 						txtUri.setText(currentUri);
 						final EditText txtLatency = (EditText) dialog.findViewById(R.id.editLatency);
-						final String currentLatency = selectedStream.getProperty(StreamProperty.LATENCY);
+						final String currentLatency = selectedStream.getProperty(StreamProperty.LATENCY).toString();
 						txtLatency.setText(currentLatency);
 						
 						Button butOk = (Button) dialog.findViewById(R.id.button_ok);
@@ -247,18 +247,7 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
 	           
 	    }
 	 
-	 	@Override
-		public void onStreamDialogPositiveClick(StreamDialogFragment dialog) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void onStreamDialogNegativeClick(StreamDialogFragment dialog) {
-			// TODO Auto-generated method stub
-			
-		}
-	    
+	 	
 	    
 	private void updateStreamStateInfo(IStream stream)
 	    { Log.d(TAG, "Called updateStreamStateInfo on stream");
