@@ -17,26 +17,26 @@ public interface IStreamFragmentCommandListener {
 
 	/**
 	 * Callback triggered after the user clicked on the play button
-	 * @param streamId the id of the stream the StreamFragmet refer to
+	 * @param streamId the id of the stream the StreamFragment refer to
 	 */
 	public void onPlay(String streamId);
 	
 	/**
 	 * Callback triggered after the user clicked on the pause button
-	 * @param streamId the id of the stream the StreamFragmet refer to
+	 * @param streamId the id of the stream the StreamFragment refer to
 	 */
 	public void onPause(String streamId);
 	
 	/**
 	 * Callback triggered after the surfaceView of the fragment became available 
-	 * @param streamId  the id of the stream the StreamFragmet refer to
+	 * @param streamId  the id of the stream the StreamFragment refer to
 	 * @param surfaceView the surfaceView where to render the stream
 	 */
 	public void onSurfaceViewCreated(String streamId, SurfaceView surfaceView);
 	
 	/**
 	 * Callback triggered when the surfaceView of this fragment was destroyed 
-	 * @param streamId the id of the stream the StreamFragmet refer to
+	 * @param streamId the id of the stream the StreamFragment refer to
 	 */
 	public void onSurfaceViewDestroyed(String streamId);
 }
