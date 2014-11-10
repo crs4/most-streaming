@@ -98,12 +98,6 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
     	
     	this.notificationHandler = notificationHandler;
-    	
-    	this.streamName =   configParams.get("name");
-    	this.uri = configParams.get("uri");
-    	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
-    	
-    	
     }
     
     private void notifyState(StreamingEventBundle myStateBundle)
@@ -347,7 +341,9 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 			if  (uriUpdated)
 			{
 				this.uri = uri;
+				Log.d("GSTREAMER_BACKEND", "uri updated to:" + this.uri);
 			}
+			else Log.d("GSTREAMER_BACKEND", "uri NOT updated! current value is ->" + this.uri);
 			return uriUpdated;
 	}
 	
@@ -393,12 +389,23 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		return setUriAndLatency(this.uri, this.latency);
 	}
 	@Override
-	public String getProperty(StreamProperty property) {
-		if (property==StreamProperty.URI)
+	public Object getProperty(StreamProperty property) {
+		if (property==StreamProperty.NAME)
+			return this.streamName;
+		else if (property==StreamProperty.URI)
 			return this.getUri();
 		else if (property==StreamProperty.LATENCY)
 			return String.valueOf(this.getLatency());
+		else if (property==StreamProperty.VIDEO_SIZE)
+			return this.videoSize;	
+		else if (property==StreamProperty.STATE)
+			return this.streamState;
 		return null;
+	}
+	
+	@Override
+	public boolean loadStillImage(String uri) {
+		return this.nativeSetUri(uri);
 	}
 }
 

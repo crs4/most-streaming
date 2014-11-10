@@ -73,7 +73,7 @@ public interface IStream {
      * @param property
      * @return the value of the property
      */
-	public String getProperty(StreamProperty property);
+	public Object getProperty(StreamProperty property);
 	
 	/**
 	 * Commit the stream properties values specified as argument
@@ -82,5 +82,11 @@ public interface IStream {
 	 */
 	public boolean commitProperties(StreamProperties properties);
 
+	/**
+	 * Load a still image from the remote camera, provided the uri
+	 * @param uri the uri pointing to the image to load
+	 * @return <code>true</code> if no error occurred during the operation, <code>false</code> otherwise
+	 */
+	public boolean loadStillImage(String uri);
 }
 

@@ -10,6 +10,9 @@ __pycache__/
 *.so
 *.o
 
+# internal local python examples folder
+gstreamer_local_examples/
+
 # Distribution / packaging
 .Python
 env/
