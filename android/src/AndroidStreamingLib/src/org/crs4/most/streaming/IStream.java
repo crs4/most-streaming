@@ -88,5 +88,12 @@ public interface IStream {
 	 * @return <code>true</code> if no error occurred during the operation, <code>false</code> otherwise
 	 */
 	public boolean loadStillImage(String uri);
+	
+	/**
+	 * Get detailed informations about a stream error (return an empty stream if the stream is not in Stream.ERROR state)
+	 * @return infomrations about the type of stream error
+	 */
+	public String getErrorMsg();
+		
 }
 

@@ -4,8 +4,6 @@ import java.util.Properties;
 
 import org.crs4.most.streaming.enums.StreamProperty;
 
-import android.util.Property;
-
 /**
  * This class collects a set of stream properties a user intend to apply to a stream.
  *  @see IStream#commitProperties(StreamProperties)

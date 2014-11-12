@@ -63,6 +63,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     private boolean stream_initialized = false;
 
     private Size videoSize = null;
+    private String errorMsg = "";
     
     static {
     	
@@ -236,6 +237,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     {   
     	String  infoMsg = this.getName() + ":" + info;
     	Log.e(TAG, "Stream Error:" + info);
+    	this.errorMsg = info;
     	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, infoMsg , this));
     	this.streamState = StreamState.ERROR;
     	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this));
@@ -406,6 +408,13 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	@Override
 	public boolean loadStillImage(String uri) {
 		return this.nativeSetUri(uri);
+	}
+	
+	@Override
+	public String getErrorMsg() {
+		if (this.streamState==StreamState.ERROR)
+		return this.errorMsg;
+		else return "";
 	}
 }
 

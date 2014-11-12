@@ -161,4 +161,15 @@ public class MockIStream implements IStream  {
 		return false;
 	}
 
+	@Override
+	public boolean loadStillImage(String uri) {
+		return true;
+	}
+
+	@Override
+	public String getErrorMsg() {
+		
+		return "";
+	}
+
 }
