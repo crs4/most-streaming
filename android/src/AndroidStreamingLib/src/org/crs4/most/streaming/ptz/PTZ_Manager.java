@@ -6,8 +6,10 @@ import java.util.Map;
 import org.crs4.most.streaming.enums.PTZ_Direction;
 
 import android.content.Context;
+import android.util.Base64;
 import android.util.Log;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -19,10 +21,18 @@ public class PTZ_Manager {
 
 	private String uri;
 	private String username;
+	private String password;
 	private Context ctx;
 	
 	private static String TAG = "PTZ_Manager";
 	
+	/**
+	 * Handles ptz commands of a remote Axis webcam.
+	 * @param ctx The activity context
+	 * @param uri The ptz uri of the webcam 
+	 * @param username the username used for ptz authentication
+	 * @param password  the username used for ptz authentication
+	 */
 	public PTZ_Manager(Context ctx, String uri, String username, String password)
 	{
 		this.ctx=ctx;
@@ -32,28 +42,31 @@ public class PTZ_Manager {
 	}
 	
 	
+	/**
+	 * Command for start moving the webcam in a specified direction
+	 *  
+	 * @param direction the direction {@link PTZ_Direction.STOP}} stops the webcam
+	 */
 	public void startMove(PTZ_Direction direction)
 	{
-		this.move(direction,30);
+		this.startMove(direction,30);
 	}
 	
 	public void stopMove()
 	{
-		this.move(PTZ_Direction.STOP ,0);
+		this.startMove(PTZ_Direction.STOP ,0);
 	}
 	
-	public void move(PTZ_Direction direction, int speed)
+	public void startMove(PTZ_Direction direction, int speed)
 	{
-		//self.do_cmd('continuouspantiltmove=%s,%s' % ((direction[0]*speed), (direction[1]*speed)))
-		String cmd = "continuouspantiltmove=" + String.valueOf(direction.getX()*speed) + "," + String.valueOf(direction.getY()*speed);
+		String cmd =  String.format("continuouspantiltmove=%s,%s",String.valueOf(direction.getX()*speed),String.valueOf(direction.getY()*speed));  
 		this.sendPtzCmd(cmd);
 	}
 	
 	 private void sendPtzCmd(String cmd)
      {
-     	//String url = "http://192.168.1.80:8000/crib/snow_on/";
-     	String url =  this.uri + "?" + cmd;
-        
+     	 String url =  String.format("%s?%s",this.uri, cmd); 
+  
          Log.d(TAG, "sending command:"+ cmd);
          
          // Instantiate the RequestQueue.
@@ -63,8 +76,8 @@ public class PTZ_Manager {
          @SuppressWarnings({ "rawtypes", "unchecked" })
 			StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                      new Response.Listener<String>() {
-         	
-
+         	   
+				
 				@Override
 				public void onResponse(String response) {
 					Log.d(TAG,"Response is: "+  response);
@@ -73,36 +86,19 @@ public class PTZ_Manager {
          }, new Response.ErrorListener() {
              @Override
              public void onErrorResponse(VolleyError error) {
-            	 Log.d(TAG,"That didn't work:" + error.getMessage());
+            	 Log.d(TAG,"Http Response Error:" + error.getMessage());
              }
 
 
          }) {
-        	 /*
-             @Override
-             protected Map<String, String> getParams() 
-
-             {  
-
-                     Map<String, String>  params = new HashMap<String, String>();  
-
-                             params.put("username", "specialista");  
-
-                             params.put("password", "speciali");
-
-                             //params.put("client_id", "d72835cfb6120e844e13");
-
-                             //params.put("client_secret", "8740cac9a53f2cdd1bded9cfbb60fdb3b5396863");
-
-                            // params.put("grant_type", "password");
-
-                      
-
-                     return params;  
-
-             }
-             */
-
+        	 	@Override
+				public Map<String, String> getHeaders() throws AuthFailureError {
+				    HashMap<String, String> params = new HashMap<String, String>();
+				    String creds = String.format("%s:%s",username,password);
+				    String auth = "Basic " + Base64.encodeToString(creds.getBytes(), Base64.DEFAULT);
+				    params.put("Authorization", auth);
+				    return params;
+				}
          };
          
          
@@ -122,6 +118,6 @@ public class PTZ_Manager {
 		return password;
 	}
 
-	private String password;
+	
 
 }
