@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.crs4.most.streaming.enums.PTZ_Direction;
+import org.crs4.most.streaming.enums.PTZ_Zoom;
 
 import android.content.Context;
 import android.util.Base64;
@@ -41,6 +42,29 @@ public class PTZ_Manager {
 		this.password = password;
 	}
 	
+	
+	public void zoom(int value)
+	{
+		String cmd =  String.format("zoom=%d", value);
+		this.sendPtzCmd(cmd);
+	}
+	
+	public void startZoom(PTZ_Zoom zoomDirection)
+	{
+		this.startZoom(zoomDirection, 30);
+	}
+	
+
+	public void startZoom(PTZ_Zoom zoomDirection, int speed)
+	{
+		String cmd =  String.format("continuouszoommove=%d",  zoomDirection.intValue()*speed);  
+		this.sendPtzCmd(cmd);
+	}
+	
+	public void stopZoom()
+	{
+		this.startZoom(PTZ_Zoom.STOP, 0);
+	}
 	
 	/**
 	 * Command for start moving the webcam in a specified direction
