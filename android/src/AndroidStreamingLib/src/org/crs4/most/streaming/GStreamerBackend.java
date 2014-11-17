@@ -163,6 +163,12 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
      */
 	public void play() {
 		Log.d(TAG,"Trying to play stream...");
+		if (this.getState()==StreamState.PLAYING)
+		{
+			Log.d(TAG,"The stream is already playing...request ignored");
+			return;
+		}
+		
 		this.streamState = StreamState.PLAYING_REQUEST;
 		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stremm " + this.streamName, this));
 		nativePlay();

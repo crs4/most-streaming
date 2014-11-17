@@ -87,6 +87,13 @@ public class PTZ_Manager {
 		this.sendPtzCmd(cmd);
 	}
 	
+	
+	public void goTo(String preset)
+	{
+		String cmd =  String.format("gotoserverpresetname=%s", preset);
+		this.sendPtzCmd(cmd);
+	}
+	
 	 private void sendPtzCmd(String cmd)
      {
      	 String url =  String.format("%s?%s",this.uri, cmd); 
