@@ -1,8 +1,10 @@
 package org.crs4.most.streaming.utils;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -116,6 +118,21 @@ public class ImageDownloader {
 				}
 		}
    
+		
+		public static File [] getInternalImages(Context ctx)
+		{
+			File appDir = ctx.getFilesDir();
+			File[] jpgFiles = appDir.listFiles(new FileFilter() {
+
+				@Override
+				public boolean accept(File pathname) {
+					 
+					return pathname.exists() && pathname.getAbsolutePath().endsWith(".jpg");
+				}});
+			
+			
+			return  jpgFiles;
+		}
 		
 		public void loadImageFromInternalStorage(String filename) {
 

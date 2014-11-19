@@ -188,6 +188,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	
 	@Override
 	public void destroy() {
+		Log.d(TAG, "Called destroy() in GSTEREAMER BACKEND");
 		if (this.streamState==StreamState.DEINITIALIZED)
 		{
 			Log.d(TAG, "Stream " + this.getName() + " already deinitialized...");
@@ -312,13 +313,16 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.d("GStreamer", "Surface created: " + holder.getSurface());
+        Log.d("GStreamer", "Surface created:::: " + holder.getSurface());
         this.surfaceInit(holder.getSurface());
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.d("GStreamer", "Surface destroyed");
+        Log.d("GStreamer", "Surface destroyed::::");
+       
         this.surfaceFinalize();
+        // if the surface was destroyed we also destroy the stream
+        this.destroy();
     }
     
 
