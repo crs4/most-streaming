@@ -134,6 +134,12 @@ public class ImageDownloader {
 			return  jpgFiles;
 		}
 		
+		public static boolean deleteInternalFile(Context ctx, String filename) {
+			File filePath = new File(ctx.getFilesDir().getAbsolutePath() + "/" + filename);
+			
+			return filePath.exists() && filePath.delete();
+		}
+		
 		public void loadImageFromInternalStorage(String filename) {
 
 			Bitmap thumbnail = null;
