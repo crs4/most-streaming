@@ -37,6 +37,16 @@ destroy
 
    Destroy this stream
 
+getErrorMsg
+^^^^^^^^^^^
+
+.. java:method:: public String getErrorMsg()
+   :outertype: IStream
+
+   Get detailed informations about a stream error (return an empty stream if the stream is not in Stream.ERROR state)
+
+   :return: infomrations about the type of stream error
+
 getName
 ^^^^^^^
 
@@ -48,7 +58,7 @@ getName
 getProperty
 ^^^^^^^^^^^
 
-.. java:method:: public String getProperty(StreamProperty property)
+.. java:method:: public Object getProperty(StreamProperty property)
    :outertype: IStream
 
    Reads the current value of the specified stream property
@@ -71,6 +81,17 @@ getVideoSize
    :outertype: IStream
 
    :return: the current size of the video stream
+
+loadStillImage
+^^^^^^^^^^^^^^
+
+.. java:method:: public boolean loadStillImage(String uri)
+   :outertype: IStream
+
+   Load a still image from the remote camera, provided the uri
+
+   :param uri: the uri pointing to the image to load
+   :return: \ ``true``\  if no error occurred during the operation, \ ``false``\  otherwise
 
 pause
 ^^^^^

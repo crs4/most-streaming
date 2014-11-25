@@ -24,14 +24,45 @@ import com.android.volley.Response;
 
 import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.Volley;
-
+/**
+ * This class provides utility methods for downloading, storing and loading images from/to the internal storage. 
+ * Note that the image downloading process is asynchronous, so it uses the interface {@link ImageDownloader.IBitmapReceiver} 
+ * for notifying the user about the downloading outcomes.
+ */
 public class ImageDownloader {
 	
+	/**
+	 * An ImageDownloader user must provide this interface for receiving notifications about image donwloading and storing.
+	 *  
+	 */
 	public interface IBitmapReceiver {
 		
+		/**
+		 * Called when a bitmap was successfully downloaded
+		 * @param imageDownloader the ImageDownloader that has triggered this callback
+		 * @param image the downloaded bitmap
+		 */
 		public void onBitmapDownloaded(ImageDownloader imageDownloader, Bitmap image);
+		
+		/**
+		 * Called when the image downloading failed for some raison
+		 * @param imageDownloader the ImageDownloader that has triggered this callback
+		 * @param ex the exception raised during the downloading process
+		 */
 		public void onBitmapDownloadingError(ImageDownloader imageDownloader, Exception ex);
+		
+		/**
+		 * Called when the bitmp was stored in to the internal storage
+		 * @param imageDownloader the ImageDownloader that has triggered this callback
+		 * @param filename the name of the stored file
+		 */
 		public void onBitmapSaved(ImageDownloader imageDownloader, String filename);
+		
+		/**
+		 * Called when the image saving failed for some raison
+		 * @param imageDownloader the ImageDownloader that has triggered this callback
+		 * @param ex the exception raised during the saving process
+		 */
 		public void onBitmapSavingError(ImageDownloader imageDownloader, Exception ex);
 	}
 	
@@ -45,7 +76,8 @@ public class ImageDownloader {
     
     
     /**
-     * This class handles asynchronous image downloads.For each downloaded image, call the method {@link ImageDownloader.IBitmapReceiver#onBitmapReady(Bitmap)}}
+     * This class handles asynchronous image downloads. Once a image has been successfully downloaded,  
+     * it calls the method {@link ImageDownloader.IBitmapReceiver#onBitmapReady(Bitmap)}}
      * @param receiver the object that will receive the downloaded image
      * @param ctx the activity context
      * @param username the user name (needed for authentication)
@@ -59,6 +91,10 @@ public class ImageDownloader {
 		this.receiver = receiver;
 	}
 	
+	/**
+	 *  asynchronously downloads an image from the web 
+	 * @param url the url image
+	 */
 	public void downloadImage(String url)
     {     
 		ImageRequest ir = new ImageRequest(url, new Response.Listener<Bitmap>() {
@@ -99,8 +135,9 @@ public class ImageDownloader {
 	}
 	
 	/**
-	 * Method to save bitmap into internal memory
-	 * @param image and context
+	 * Save a bitmap into to internal storage
+	 * @param image the bitmap to save
+	 * @param filename the filename of the saved bitmap
 	 */
 		public void saveImageToInternalStorage(Bitmap image,String filename)
 		{
@@ -114,12 +151,28 @@ public class ImageDownloader {
 		}
 		catch (Exception e) {
 			Log.e("saveToInternalStorage()", e.getMessage());
-			receiver.onBitmapDownloadingError(this, e);
+			receiver.onBitmapSavingError(this, e);
 				}
 		}
    
 		
+		/**
+		 * Get the list of .jpeg images stored in the internal archive (private to the activity context passed as argument)
+		 * @param ctx the activity context
+		 * @return the list of .jpg images 
+		 */
 		public static File [] getInternalImages(Context ctx)
+		{
+			return getInternalImages(ctx, ".jpg");
+		}
+		
+		/**
+		 * Get the list of images stored in the internal archive (private to the activity context passed as argument)
+		 * @param ctx the activity context
+		 * @param filter the image type filter (e.g: ".jpg")
+		 * @return the list of images
+		 */
+		public static File [] getInternalImages(Context ctx, final String filter)
 		{
 			File appDir = ctx.getFilesDir();
 			File[] jpgFiles = appDir.listFiles(new FileFilter() {
@@ -127,19 +180,29 @@ public class ImageDownloader {
 				@Override
 				public boolean accept(File pathname) {
 					 
-					return pathname.exists() && pathname.getAbsolutePath().endsWith(".jpg");
+					return pathname.exists() && pathname.getAbsolutePath().endsWith(filter);
 				}});
 			
 			
 			return  jpgFiles;
 		}
 		
+		/**
+		 * Deletes an image   from the internal storage 
+		 * @param ctx the context the activity context
+		 * @param filename the name (no path) )of the file to be deleted 
+		 * @return true if the file was deleted , false otherwise
+		 */
 		public static boolean deleteInternalFile(Context ctx, String filename) {
 			File filePath = new File(ctx.getFilesDir().getAbsolutePath() + "/" + filename);
 			
 			return filePath.exists() && filePath.delete();
 		}
 		
+		/**
+		 * Loads an image from the internal storage. The loaded bitmap will be sent to the callback method {@link IBitmapReceiver#onBitmapDownloaded(ImageDownloader, Bitmap)}
+		 * @param filename the name of the file to load
+		 */
 		public void loadImageFromInternalStorage(String filename) {
 
 			Bitmap thumbnail = null;

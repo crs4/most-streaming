@@ -28,7 +28,7 @@ public class PTZ_Manager {
 	private static String TAG = "PTZ_Manager";
 	
 	/**
-	 * Handles ptz commands of a remote Axis webcam.
+	 * Handles ptz commands of a remote Axis webcam. (tested on Axis 214 PTZ model)
 	 * @param ctx The activity context
 	 * @param uri The ptz uri of the webcam 
 	 * @param username the username used for ptz authentication
@@ -42,52 +42,77 @@ public class PTZ_Manager {
 		this.password = password;
 	}
 	
-	
+	/**
+	 * Zoom the webcam to te specified value (positive values are for zoom-in, negative values for zoom-out)
+	 * @param value
+	 */
 	public void zoom(int value)
 	{
 		String cmd =  String.format("zoom=%d", value);
 		this.sendPtzCmd(cmd);
 	}
 	
+	/**
+	 * Start zooming to the specified direction
+	 * @param zoomDirection the zoom direction
+	 */
 	public void startZoom(PTZ_Zoom zoomDirection)
 	{
 		this.startZoom(zoomDirection, 30);
 	}
 	
-
+    /**
+     * Start zooming at the specified direction and speed
+     * @param zoomDirection the zzom directiom
+     * @param speed the zoom speed
+     */
 	public void startZoom(PTZ_Zoom zoomDirection, int speed)
 	{
 		String cmd =  String.format("continuouszoommove=%d",  zoomDirection.intValue()*speed);  
 		this.sendPtzCmd(cmd);
 	}
 	
+	/**
+	 * Stop the zoom
+	 */
 	public void stopZoom()
 	{
 		this.startZoom(PTZ_Zoom.STOP, 0);
 	}
 	
 	/**
-	 * Command for start moving the webcam in a specified direction
+	 * Start moving the webcam to a specified direction
 	 *  
-	 * @param direction the direction {@link PTZ_Direction.STOP}} stops the webcam
+	 * @param direction the direction ({@link PTZ_Direction.STOP}} stops the webcam)
 	 */
 	public void startMove(PTZ_Direction direction)
 	{
 		this.startMove(direction,30);
 	}
 	
+	/**
+	 * Stop the pan and/or tilt movement of the webcam
+	 */
 	public void stopMove()
 	{
 		this.startMove(PTZ_Direction.STOP ,0);
 	}
 	
+	/**
+	 * Start moving at the specified direction and speed
+	 * @param direction the moving direction
+	 * @param speed the speed
+	 */
 	public void startMove(PTZ_Direction direction, int speed)
 	{
 		String cmd =  String.format("continuouspantiltmove=%s,%s",String.valueOf(direction.getX()*speed),String.valueOf(direction.getY()*speed));  
 		this.sendPtzCmd(cmd);
 	}
 	
-	
+	/**
+	 * Move the webcam to the position (and/or zoom value) specified by the preset passed as argument
+	 * @param preset the preset name
+	 */
 	public void goTo(String preset)
 	{
 		String cmd =  String.format("gotoserverpresetname=%s", preset);
@@ -137,18 +162,27 @@ public class PTZ_Manager {
          queue.add(stringRequest);
 
      }
+	 /**
+	  * Get the uri connection string
+	  * @return the uri used for connecting to the webcam
+	  */
 	public String getUri() {
 		return uri;
 	}
 
+	/**
+	 * Get the username used for the authentication
+	 * @return the username
+	 */
 	public String getUsername() {
 		return username;
 	}
-
+    
+	/**
+	 * Get the password used for the authentication
+	 * @return the password
+	 */
 	public String getPassword() {
 		return password;
 	}
-
-	
-
 }
