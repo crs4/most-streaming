@@ -10,6 +10,13 @@
 package org.crs4.most.streaming.enums;
 
 public enum StreamingEventType {
-     LIB_EVENT,  // generic library events
-	 STREAM_EVENT, // stream events as state changes (play, pause...) or other stream related events 
+	/** 
+	 * generic library events 
+	 */
+     LIB_EVENT, 
+     
+     /**  
+      * stream events as state changes (play, pause...) or other stream related events 
+      */
+	 STREAM_EVENT, 
 }

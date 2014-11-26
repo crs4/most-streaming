@@ -286,13 +286,13 @@ static void buffering_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 /* Called when the clock is lost */
 static void clock_lost_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
   if (data->target_state >= GST_STATE_PLAYING) {
-	set_ui_message ("Clock lost...pausing and playing stream", data);
+	//set_ui_message ("Clock lost...pausing and playing stream", data);
     gst_element_set_state (data->pipeline, GST_STATE_PAUSED);
     gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
   }
 }
 
-/* Called after the pipeline source has been created */
+/* Called after the pipeline source has been created  DISABLED 
 static void playbinNotifyLatency(GstBin *bin, CustomData *data){
 	GST_DEBUG("*** Called playbinNotifyLatency ****");
 	GstElement *source;
@@ -303,12 +303,12 @@ static void playbinNotifyLatency(GstBin *bin, CustomData *data){
 	int latencyInt = g_value_get_int(&currentLatencyVal);
 	GST_DEBUG("Current latency value is:%d" , latencyInt);
 }
-
+*/
 
 /* Called after the pipeline source has been created */
 static void playbinNotifySource(GObject *o, GstMessage *msg, CustomData *data) {
 
-		GST_DEBUG("Called playbinNotifySource");
+		//GST_DEBUG("Called playbinNotifySource");
 		GST_DEBUG("Called playbinNotifySource; Stream is in state: %d target:%d" , data->state, data->target_state);
 	    GstElement *source;
 	    g_object_get(o, "source", &source, NULL);
@@ -480,7 +480,7 @@ static void *app_function (void *userdata) {
 
   // connect to pipeline for setting varoius properties
   g_signal_connect (G_OBJECT (data->pipeline),"source-setup", (GCallback) playbinNotifySource, data);
-  g_signal_connect(G_OBJECT(data->pipeline),"do-latency", (GCallback) playbinNotifyLatency, data);
+  //g_signal_connect(G_OBJECT(data->pipeline),"do-latency", (GCallback) playbinNotifyLatency, data); // DISABLED because it slows down performances!! 
 
   gst_object_unref (bus);
 
@@ -631,16 +631,21 @@ static jboolean gst_native_set_uri_and_latency (JNIEnv* env, jobject thiz, jstri
 		  return JNI_FALSE;
 		  }
 
-	  if (latency>0)
+	  if (latency>=0)
 	  {
+		  GST_DEBUG ("Updating latency...");
 		  data->latency = (gint) latency;
+		  GST_DEBUG ("%s: Setting LATENCY to %d" , data->stream_name, data->latency);
+	  }
+	  else 
+	  {	
+		  GST_WARNING("%s: Negative values of latency NOT supported! Latency updating ignored.", data->stream_name);
 	  }
 
 	  const jbyte *char_uri = (*env)->GetStringUTFChars (env, uri, NULL);
-	  GST_DEBUG ("Setting URI:::: %s" , char_uri);
+	  GST_DEBUG ("%s Setting URI:::: %s" , data->stream_name,  char_uri);
 
-
-	  GST_DEBUG ("Stream name is:%s ", data->stream_name);
+ 
 
 
 	      // stop the stream if  it is playing

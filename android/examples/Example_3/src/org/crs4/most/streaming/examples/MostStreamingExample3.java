@@ -23,8 +23,6 @@ import org.crs4.most.streaming.enums.StreamProperty;
 import org.crs4.most.streaming.enums.StreamState;
 import org.crs4.most.streaming.enums.StreamingEvent;
 import org.crs4.most.streaming.enums.StreamingEventType;
-import org.crs4.most.streaming.examples.StreamDialogFragment.StreamDialogListener;
-
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -126,8 +124,8 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
         	// Instance the first stream
         	HashMap<String,String> stream1_params = new HashMap<String,String>();
         	stream1_params.put("name", "Stream_1");
-        	stream1_params.put("uri", "http://clips.vorwaerts-gmbh.de/VfE.webm");
-        	 
+        	stream1_params.put("uri", "http://clips.vorwaerts-gmbh.de/VfE.webm"); // 
+        	
         	this.stream1 = streamingLib.createStream(stream1_params, this.handler);
         	Log.d(TAG,"STREAM 1 INSTANCE");
         	// Instance the first StreamViewer fragment where to render the first stream by passing the stream name as its ID.
@@ -143,7 +141,7 @@ public class MostStreamingExample3 extends Activity implements Handler.Callback,
     		// Instance the second stream
         	HashMap<String,String> stream2_params = new HashMap<String,String>();
         	stream2_params.put("name", "Stream_2");
-        	stream2_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv");
+        	stream2_params.put("uri", "http://docs.gstreamer.com/media/sintel_trailer-368p.ogv"); // 
         	Log.d(TAG,"STREAM 2 INSTANCE");
         	this.stream2 = streamingLib.createStream(stream2_params, this.handler);
         	

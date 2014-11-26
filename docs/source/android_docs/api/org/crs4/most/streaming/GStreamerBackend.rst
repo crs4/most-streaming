@@ -54,6 +54,12 @@ destroy
 .. java:method:: @Override public void destroy()
    :outertype: GStreamerBackend
 
+getErrorMsg
+^^^^^^^^^^^
+
+.. java:method:: @Override public String getErrorMsg()
+   :outertype: GStreamerBackend
+
 getName
 ^^^^^^^
 
@@ -63,7 +69,7 @@ getName
 getProperty
 ^^^^^^^^^^^
 
-.. java:method:: @Override public String getProperty(StreamProperty property)
+.. java:method:: @Override public Object getProperty(StreamProperty property)
    :outertype: GStreamerBackend
 
 getState
@@ -84,6 +90,12 @@ getVideoSize
 ^^^^^^^^^^^^
 
 .. java:method:: @Override public Size getVideoSize()
+   :outertype: GStreamerBackend
+
+loadStillImage
+^^^^^^^^^^^^^^
+
+.. java:method:: @Override public boolean loadStillImage(String uri)
    :outertype: GStreamerBackend
 
 pause

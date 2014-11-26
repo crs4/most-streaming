@@ -57,7 +57,7 @@ public class IStreamArrayAdapter extends ArrayAdapter<IStream> {
         }
         IStream myStream = getItem(position);
         viewHolder.name.setText(myStream.getName());
-        viewHolder.uri.setText(myStream.getProperty(StreamProperty.URI));
+        viewHolder.uri.setText(myStream.getProperty(StreamProperty.URI).toString());
         if (myStream.getVideoSize()!=null)
         	viewHolder.videoSize.setText(myStream.getVideoSize().toString());
         else

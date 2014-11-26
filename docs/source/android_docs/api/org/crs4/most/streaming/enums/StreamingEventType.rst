@@ -14,9 +14,13 @@ LIB_EVENT
 .. java:field:: public static final StreamingEventType LIB_EVENT
    :outertype: StreamingEventType
 
+   generic library events
+
 STREAM_EVENT
 ^^^^^^^^^^^^
 
 .. java:field:: public static final StreamingEventType STREAM_EVENT
    :outertype: StreamingEventType
+
+   stream events as state changes (play, pause...) or other stream related events
 

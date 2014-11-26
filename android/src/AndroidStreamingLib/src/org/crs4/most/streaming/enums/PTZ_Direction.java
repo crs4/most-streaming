@@ -2,6 +2,7 @@ package org.crs4.most.streaming.enums;
 
 public enum PTZ_Direction {
 	
+	STOP(0, 0),
 	UP(0, 1),
     DOWN(0, -1),
     RIGHT(1, 0),

@@ -2,8 +2,6 @@
 
 .. java:import:: org.crs4.most.streaming.enums StreamProperty
 
-.. java:import:: android.util Property
-
 StreamProperties
 ================
 

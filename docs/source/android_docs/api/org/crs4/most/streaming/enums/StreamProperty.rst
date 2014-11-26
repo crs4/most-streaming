@@ -16,6 +16,22 @@ LATENCY
 
    the preferred stream latency property
 
+NAME
+^^^^
+
+.. java:field:: public static final StreamProperty NAME
+   :outertype: StreamProperty
+
+   the stream name property
+
+STATE
+^^^^^
+
+.. java:field:: public static final StreamProperty STATE
+   :outertype: StreamProperty
+
+   the current state (read only )
+
 URI
 ^^^
 
@@ -23,4 +39,12 @@ URI
    :outertype: StreamProperty
 
    the stream uri property
+
+VIDEO_SIZE
+^^^^^^^^^^
+
+.. java:field:: public static final StreamProperty VIDEO_SIZE
+   :outertype: StreamProperty
+
+   the video size
 
