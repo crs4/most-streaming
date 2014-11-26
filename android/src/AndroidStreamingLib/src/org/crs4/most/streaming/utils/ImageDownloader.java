@@ -5,6 +5,8 @@ import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -150,7 +152,7 @@ public class ImageDownloader {
 			receiver.onBitmapSaved(this, filename);
 		}
 		catch (Exception e) {
-			Log.e("saveToInternalStorage()", e.getMessage());
+			Log.e("saveToInternalStorage():" , e.getMessage());
 			receiver.onBitmapSavingError(this, e);
 				}
 		}
@@ -183,7 +185,21 @@ public class ImageDownloader {
 					return pathname.exists() && pathname.getAbsolutePath().endsWith(filter);
 				}});
 			
-			
+			// sort by date
+			Arrays.sort(jpgFiles, new Comparator()
+			{
+			    public int compare(Object o1, Object o2) {
+
+			        if (((File)o1).lastModified() > ((File)o2).lastModified()) {
+			            return -1;
+			        } else if (((File)o1).lastModified() < ((File)o2).lastModified()) {
+			            return 1;
+			        } else {
+			            return 0;
+			        }
+			    }
+
+			}); 
 			return  jpgFiles;
 		}
 		
