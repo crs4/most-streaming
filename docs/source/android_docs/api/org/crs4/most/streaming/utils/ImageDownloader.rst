@@ -8,6 +8,10 @@
 
 .. java:import:: java.util ArrayList
 
+.. java:import:: java.util Arrays
+
+.. java:import:: java.util Comparator
+
 .. java:import:: java.util HashMap
 
 .. java:import:: java.util Map
