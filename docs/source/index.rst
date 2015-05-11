@@ -32,7 +32,9 @@ TREE:
 .. toctree::
    :maxdepth: 2
 
+   
    installation
+   android_docs/index
    examples
    license
    authors

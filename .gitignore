@@ -1,3 +1,7 @@
+# examples data
+uri.properties.default
+.settings/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -5,6 +9,9 @@ __pycache__/
 # C extensions
 *.so
 *.o
+
+# internal local python examples folder
+gstreamer_local_examples/
 
 # Distribution / packaging
 .Python
