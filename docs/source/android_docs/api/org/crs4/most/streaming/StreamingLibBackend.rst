@@ -18,7 +18,7 @@ StreamingLibBackend
 
 .. java:type:: public class StreamingLibBackend implements StreamingLib
 
-   This class implements the \ :java:ref:`StreamingLib`\  interface by using the GStreamer library as backend. So, you can get a \ :java:ref:`StreamingLib`\  instance in the following way:
+   This class implements the \ :java:ref:`StreamingLib`\  interface. It internally uses the GStreamer library as backend. So, you can get a \ :java:ref:`StreamingLib`\  instance in the following way:
 
    .. parsed-literal::
 

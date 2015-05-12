@@ -43,7 +43,7 @@ public class PTZ_Manager {
 	}
 	
 	/**
-	 * Zoom the webcam to te specified value (positive values are for zoom-in, negative values for zoom-out)
+	 * Zoom the webcam to the specified value (positive values are for zoom-in, negative values for zoom-out)
 	 * @param value
 	 */
 	public void zoom(int value)
@@ -62,8 +62,8 @@ public class PTZ_Manager {
 	}
 	
     /**
-     * Start zooming at the specified direction and speed
-     * @param zoomDirection the zzom directiom
+     * Start zooming to the specified direction and speed
+     * @param zoomDirection the zoom directiom
      * @param speed the zoom speed
      */
 	public void startZoom(PTZ_Zoom zoomDirection, int speed)
@@ -81,7 +81,7 @@ public class PTZ_Manager {
 	}
 	
 	/**
-	 * Start moving the webcam to a specified direction
+	 * Start moving the webcam to the specified direction
 	 *  
 	 * @param direction the direction ({@link PTZ_Direction.STOP}} stops the webcam)
 	 */
@@ -99,7 +99,7 @@ public class PTZ_Manager {
 	}
 	
 	/**
-	 * Start moving at the specified direction and speed
+	 * Start moving the webcam to the specified direction and speed
 	 * @param direction the moving direction
 	 * @param speed the speed
 	 */

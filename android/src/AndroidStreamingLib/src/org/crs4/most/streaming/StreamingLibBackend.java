@@ -19,7 +19,7 @@ import android.os.Handler;
 import android.util.Log;
 
 /**
- * This class implements the {@link StreamingLib} interface by using the GStreamer library as backend.
+ * This class implements the {@link StreamingLib} interface. It internally uses the GStreamer library as backend.
  * So, you can get a {@link StreamingLib} instance in the following way:
  * <pre>
  * <code> 

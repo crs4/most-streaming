@@ -13,6 +13,10 @@ Android
    * Build the project (Note that the NDK must be installed and configurated on your system in order to build the project)
    * Deploy the application on your android device or on your emulator 
    
+ Other examples are included into the  *android/examples* folder. Finally, consider using the  `MOST Visualizazion Framework <https://github.com/crs4/most-visualization>`_ 
+ that allows you to include into  mobile applications visual and interactive widgets capable of rendering and inspecting A/V streams.
+ 
+ 
 iOS
 ---
 

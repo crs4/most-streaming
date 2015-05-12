@@ -97,7 +97,7 @@ startMove
 .. java:method:: public void startMove(PTZ_Direction direction)
    :outertype: PTZ_Manager
 
-   Start moving the webcam to a specified direction
+   Start moving the webcam to the specified direction
 
    :param direction: the direction (\ :java:ref:`PTZ_Direction.STOP`\ } stops the webcam)
 
@@ -107,7 +107,7 @@ startMove
 .. java:method:: public void startMove(PTZ_Direction direction, int speed)
    :outertype: PTZ_Manager
 
-   Start moving at the specified direction and speed
+   Start moving the webcam to the specified direction and speed
 
    :param direction: the moving direction
    :param speed: the speed
@@ -128,9 +128,9 @@ startZoom
 .. java:method:: public void startZoom(PTZ_Zoom zoomDirection, int speed)
    :outertype: PTZ_Manager
 
-   Start zooming at the specified direction and speed
+   Start zooming to the specified direction and speed
 
-   :param zoomDirection: the zzom directiom
+   :param zoomDirection: the zoom directiom
    :param speed: the zoom speed
 
 stopMove
@@ -155,7 +155,7 @@ zoom
 .. java:method:: public void zoom(int value)
    :outertype: PTZ_Manager
 
-   Zoom the webcam to te specified value (positive values are for zoom-in, negative values for zoom-out)
+   Zoom the webcam to the specified value (positive values are for zoom-in, negative values for zoom-out)
 
    :param value:
 

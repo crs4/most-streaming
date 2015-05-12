@@ -52,6 +52,8 @@ clean:
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
+	@echo "Build java docs"
+	javasphinx-apidoc -fo source/android_docs/api/ ../android/src/AndroidStreamingLib/src/org/crs4/most/streaming/
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
 dirhtml:

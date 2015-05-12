@@ -20,11 +20,6 @@ The framework is based on opensource library `GStreamer <http://gstreamer.com>`_
 
 Applications can take advantage of advances in codec and filter technology transparently. Developers can add new codecs and filters by writing a simple plugin with a clean, generic interface.
 
-.. <Introduzione Modulo di Streaming>
-
-.. Possibilità di visualizzare streaming audio video / mpeg4 o h264 over rtp
-
-.. Libreria in python/ios/android
 
 TREE:
 
