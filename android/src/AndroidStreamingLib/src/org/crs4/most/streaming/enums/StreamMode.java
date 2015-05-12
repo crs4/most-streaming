@@ -1,4 +1,4 @@
-*!
+/*!
  * Project MOST - Moving Outcomes to Standard Telemedicine Practice
  * http://most.crs4.it/
  *
