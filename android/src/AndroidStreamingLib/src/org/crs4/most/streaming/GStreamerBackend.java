@@ -170,7 +170,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		}
 		
 		this.streamState = StreamState.PLAYING_REQUEST;
-		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stremm " + this.streamName, this));
+		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Playing request for Stream: " + this.streamName, this));
 		nativePlay();
 	}
 	
