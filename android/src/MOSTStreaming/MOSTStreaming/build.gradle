@@ -1,0 +1,60 @@
+apply plugin: 'com.android.model.library'
+
+model {
+    android {
+        compileSdkVersion 23
+        buildToolsVersion "23.0.2"
+
+        defaultConfig {
+            minSdkVersion.apiLevel 8
+            targetSdkVersion.apiLevel 21
+            versionCode 1
+            versionName "1.0"
+        }
+
+        buildTypes {
+            release {
+                minifyEnabled false
+                proguardFiles.add(file('proguard-rules.pro'))
+            }
+        }
+
+        productFlavors {
+            create("arm") {
+                ndk.abiFilters.add("armeabi")
+            }
+        }
+
+        sources {
+            main {
+                jni {
+                    source {
+                        srcDirs = []
+                    }
+                }
+            }
+        }
+    }
+}
+
+task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
+    def ndkDir = "/home/vitto/Code/AndroidSDK/ndk-r9d"
+    commandLine "$ndkDir/ndk-build", 'V=1',
+            'NDK_PROJECT_PATH=build',
+            'NDK_APPLICATION_MK=src/main/jni/Application.mk',
+            'APP_BUILD_SCRIPT=src/main/jni/Android.mk',
+            'NDK_LIBS_OUT=src/main/jniLibs'
+}
+
+tasks.withType(JavaCompile) {
+    compileTask -> compileTask.dependsOn ndkBuild
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile 'com.android.support:appcompat-v7:23.2.0'
+    compile 'com.mcxiaoke.volley:library:1.0.19'
+    testCompile 'junit:junit:4.12'
+}
+
+
