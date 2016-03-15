@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -13,10 +12,8 @@ import java.util.Map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Environment;
 import android.util.Base64;
 import android.util.Log;
-import android.widget.ImageView;
 
 
 import com.android.volley.AuthFailureError;
@@ -152,7 +149,7 @@ public class ImageDownloader {
 			receiver.onBitmapSaved(this, filename);
 		}
 		catch (Exception e) {
-			Log.e("saveToInternalStorage():" , e.getMessage());
+			Log.e(TAG, "saveToInternalStorage():" + e.getMessage());
 			receiver.onBitmapSavingError(this, e);
 				}
 		}
@@ -231,7 +228,7 @@ public class ImageDownloader {
 				
 			
 				} catch (Exception ex) {
-						Log.e( "getThumbnail() on internal storage", ex.getMessage());
+						Log.e(TAG, "getThumbnail() on internal storage" + ex.getMessage());
 						receiver.onBitmapDownloadingError(this, ex);
 						return;
 				}

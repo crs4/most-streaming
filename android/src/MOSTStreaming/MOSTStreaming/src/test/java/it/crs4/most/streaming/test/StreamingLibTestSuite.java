@@ -13,6 +13,7 @@ package it.crs4.most.streaming.test;
 
 
 import java.util.HashMap;
+
 import javax.net.ssl.HandshakeCompletedListener;
 
 import android.content.Intent;
@@ -21,9 +22,11 @@ import android.test.ActivityUnitTestCase;
 import android.util.Log;
 import android.view.SurfaceView;
 
+
 import it.crs4.most.streaming.IStream;
 import it.crs4.most.streaming.StreamingEventBundle;
 import it.crs4.most.streaming.StreamingLib;
+//import it.crs4.most.streaming.StreamingLibBackend;
 import it.crs4.most.streaming.enums.StreamState;
 import it.crs4.most.streaming.enums.StreamingEvent;
 import it.crs4.most.streaming.enums.StreamingEventType;
@@ -31,6 +34,7 @@ import it.crs4.most.streaming.test_activity.TestActivity;
 
 
 public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handler.Callback  {
+	
 	
 	public StreamingLibTestSuite() {
 		super(TestActivity.class);
@@ -72,6 +76,7 @@ public class StreamingLibTestSuite extends ActivityUnitTestCase implements Handl
 					StreamState.PAUSED,
 					StreamState.DEINITIALIZING,
 					StreamState.DEINITIALIZED  //commented for a bug in the MockIStream class
+					
 			};
 		}
  

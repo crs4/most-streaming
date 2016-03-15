@@ -1,4 +1,5 @@
 apply plugin: 'com.android.model.library'
+apply plugin: 'maven'
 
 model {
     android {
@@ -25,6 +26,10 @@ model {
             }
         }
 
+        repositories {
+            mavenLocal()
+        }
+
         sources {
             main {
                 jni {
@@ -47,7 +52,6 @@ def getNdkDir() {
     return ndkdir
 }
 
-
 task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
     def ndkDir = getNdkDir()
     commandLine "$ndkDir/ndk-build", 'V=1',
@@ -61,8 +65,12 @@ tasks.withType(JavaCompile) {
     compileTask -> compileTask.dependsOn ndkBuild
 }
 
-tasks.withType(Upload) {
-    println("uplaoding")
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            mavenLocal()
+        }
+    }
 }
 
 dependencies {
