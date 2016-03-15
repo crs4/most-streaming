@@ -1,4 +1,4 @@
-package org.crs4.most.streaming;
+package it.crs4.most.streaming;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;
