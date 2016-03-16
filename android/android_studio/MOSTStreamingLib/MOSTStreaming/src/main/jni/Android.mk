@@ -8,7 +8,7 @@ LOCAL_SHARED_LIBRARIES := gstreamer_android
 LOCAL_LDLIBS := -llog -landroid
 include $(BUILD_SHARED_LIBRARY)
 
-GSTREAMER_SDK_ROOT_ANDROID := $(GSTREAMER_ROOT) //set this env variable before building
+GSTREAMER_SDK_ROOT_ANDROID := $(GSTREAMER_ROOT)
 
 ifndef GSTREAMER_SDK_ROOT
 ifndef GSTREAMER_SDK_ROOT_ANDROID
