@@ -1,6 +1,7 @@
 apply plugin: 'com.android.model.library'
 apply plugin: 'maven'
 
+
 model {
     android {
         compileSdkVersion 23
@@ -11,6 +12,7 @@ model {
             targetSdkVersion.apiLevel 21
             versionCode 1
             versionName "1.0"
+            
         }
 
         buildTypes {
@@ -65,18 +67,38 @@ tasks.withType(JavaCompile) {
     compileTask -> compileTask.dependsOn ndkBuild
 }
 
+
+/*
+group = 'it.crs4.most.streaming'
+version = '1.0'
+*/
+
 uploadArchives {
     repositories {
+        //mavenLocal()
         mavenDeployer {
-            mavenLocal()
+            repository url:  mavenLocal().url
+
+            pom.version = '1.0'
+            pom.groupId = 'it.crs4.most.streaming'
+            pom.artifactId = 'MOSTStreaming'
         }
     }
 }
 
+
+
+artifacts {
+    archives file('build/outputs/aar/MOSTStreaming-arm-debug.aar')
+
+}
+
+
+
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
+//    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:23.2.0'
-//    compile 'com.mcxiaoke.volley:library:1.0.19'
+    compile 'com.mcxiaoke.volley:library:1.0.19'
     testCompile 'junit:junit:4.12'
 }
 
