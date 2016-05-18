@@ -94,6 +94,10 @@ public interface IStream {
 	 * @return infomrations about the type of stream error
 	 */
 	public String getErrorMsg();
+
+	public void addFrameListener(IFrameListener listener);
+
+	public void removeFrameListener(IFrameListener listener);
 		
 }
 

@@ -15,6 +15,7 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <gst/gst.h>
+#include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
 #include <pthread.h>
 
@@ -73,6 +74,10 @@ static jmethodID on_gstreamer_initialized_method_id;
 static jmethodID on_media_size_changed_method_id;
 static jmethodID on_stream_state_changed_method_id;
 static jmethodID on_stream_error_method_id;
+static jmethodID on_frame_available;
+
+
+static GstPadProbeReturn cb_have_frame (GstPad *pad, GstPadProbeInfo *info, CustomData *data);
 
 static int streams_count = 0; // Streams reference counter used to finalize global references when all streams have been deallocated
 
@@ -352,11 +357,31 @@ static void check_media_size (CustomData *data) {
   GstCaps *caps;
   GstVideoInfo info;
 
+
+    GstPad* pad;
+    g_signal_emit_by_name (data->pipeline, "get-video-pad", 0, &pad, data);
+    caps = gst_pad_get_current_caps(pad);
+    GST_DEBUG ("PLAY: caps to string %s", gst_caps_to_string (caps));
+
+
+    gst_pad_add_probe (pad, GST_PAD_PROBE_TYPE_BUFFER,
+                       (GstPadProbeCallback) cb_have_frame, data, NULL);
+//    gst_pad_add_probe (pad, GST_PAD_PROBE_TYPE_QUERY_UPSTREAM,
+//                       (GstPadProbeCallback) cb_have_frame, NULL, NULL);
+    GST_DEBUG ("added probe to pad");
+    gst_object_unref (pad);
+
+
+
   /* Retrieve the Caps at the entrance of the video sink */
   g_object_get (data->pipeline, "video-sink", &video_sink, NULL);
   video_sink_pad = gst_element_get_static_pad (video_sink, "sink");
   caps = gst_pad_get_current_caps (video_sink_pad);
+
   GST_DEBUG ("DENTRO CHECK_MEDIA SIZE -> dopo gst_pad_get_current_caps" );
+
+    GST_DEBUG ("caps to string %s", gst_caps_to_string (caps));
+
   if (gst_video_info_from_caps (&info, caps)) {
     info.width = info.width * info.par_n / info.par_d;
     GST_DEBUG ("Media size is %dx%d, notifying application", info.width, info.height);
@@ -392,7 +417,8 @@ static void state_changed_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
     g_free (message);
 
     /* The Ready to Paused state change is particularly interesting: */
-    if (old_state == GST_STATE_READY && new_state == GST_STATE_PAUSED) {
+//    if (old_state == GST_STATE_READY && new_state == GST_STATE_PAUSED) {
+    if (old_state == GST_STATE_PAUSED && new_state == GST_STATE_PLAYING) {
       /* By now the sink already knows the media size */
       check_media_size(data);
 
@@ -456,12 +482,24 @@ static void *app_function (void *userdata) {
     return NULL;
   }
 
-  /* Disable subtitles */
+    /* Disable subtitles */
   g_object_get (data->pipeline, "flags", &flags, NULL);
   flags &= ~GST_PLAY_FLAG_TEXT;
   g_object_set (data->pipeline, "flags", flags, NULL);
+//
+//    GstElement * appsink = gst_element_factory_make("appsink", "asink");
+//    gst_app_sink_set_emit_signals((GstAppSink*)appsink, 1);
+//    gst_app_sink_set_drop((GstAppSink*)appsink, 1);
+//    gst_app_sink_set_max_buffers((GstAppSink*)appsink, 1);
+//
+////creating and initialising pipeline
+//
+//    g_object_set(data->pipeline, "video-sink", appsink, NULL);
+//
+////    g_signal_connect(appsink, "new-buffer", G_CALLBACK(DisplayFrame), (gpointer) mark);
 
-  /* Set the pipeline to READY, so it can already accept a window handle, if we have one */
+
+    /* Set the pipeline to READY, so it can already accept a window handle, if we have one */
   data->target_state = GST_STATE_READY;
   gst_element_set_state(data->pipeline, GST_STATE_READY);
 
@@ -480,8 +518,7 @@ static void *app_function (void *userdata) {
 
   // connect to pipeline for setting varoius properties
   g_signal_connect (G_OBJECT (data->pipeline),"source-setup", (GCallback) playbinNotifySource, data);
-  //g_signal_connect(G_OBJECT(data->pipeline),"do-latency", (GCallback) playbinNotifyLatency, data); // DISABLED because it slows down performances!! 
-
+  //g_signal_connect(G_OBJECT(data->pipeline),"do-latency", (GCallback) playbinNotifyLatency, data); // DISABLED because it slows down performances!!
   gst_object_unref (bus);
 
   /* Register a function that GLib will call 4 times per second */
@@ -721,11 +758,16 @@ static jint gst_native_get_latency (JNIEnv* env, jobject thiz) {
 
 /* Set pipeline to PLAYING state */
 static void gst_native_play (JNIEnv* env, jobject thiz) {
-  CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+
+    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
   if (!data) return;
+
   GST_DEBUG ("Setting state to PLAYING for stream:%s" , data->stream_name);
   data->is_live = (gst_element_set_state (data->pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_NO_PREROLL);
   data->target_state = GST_STATE_PLAYING;
+
+
+
 }
 
 /* Set pipeline to PAUSED state */
@@ -759,9 +801,12 @@ static jboolean gst_native_class_init (JNIEnv* env, jclass klass) {
   on_media_size_changed_method_id = (*env)->GetMethodID (env, klass, "onMediaSizeChanged", "(II)V");
   on_stream_state_changed_method_id = (*env)->GetMethodID (env, klass, "onStreamStateChanged", "(II)V");
   on_stream_error_method_id = (*env)->GetMethodID (env, klass, "onStreamError", "(Ljava/lang/String;)V");
+    on_frame_available = (*env)->GetMethodID (env, klass, "onFrameAvailable", "([B)V");
+
+
 
   if (!custom_data_field_id || !set_message_method_id || !on_gstreamer_initialized_method_id || ! on_stream_error_method_id ||
-      !on_media_size_changed_method_id || !set_current_position_method_id || !on_stream_state_changed_method_id) {
+      !on_media_size_changed_method_id || !set_current_position_method_id || !on_stream_state_changed_method_id || !on_frame_available ) {
     /* We emit this message through the Android log instead of the GStreamer log because the later
      * has not been initialized yet.
      */
@@ -849,3 +894,44 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 
   return JNI_VERSION_1_4;
 }
+
+
+static GstPadProbeReturn cb_have_frame (GstPad *pad, GstPadProbeInfo *info, CustomData *data)
+{
+    JNIEnv *env = get_jni_env ();
+
+    GST_DEBUG ("PROBE ok");
+    __android_log_print (ANDROID_LOG_INFO, "cb_have_frame", "PROBE OK");
+    GstBuffer *gst_buffer;
+    gst_buffer = gst_pad_probe_info_get_buffer (info);
+//    gst_buffer = GST_PAD_PROBE_INFO_BUFFER (info);
+//    g_object_get(data->pipeline, "frame", gst_buffer);
+    if (gst_buffer == NULL)
+        GST_DEBUG("gst_buffer == NULL");
+
+
+    GstMapInfo gst_map_info;
+    if (gst_buffer_map (gst_buffer, &gst_map_info, GST_MAP_READ)) {
+        guint8 *buf = gst_map_info.data;
+        GST_DEBUG("before size_buff");
+        GST_DEBUG("gst_map_info->size %d", gst_map_info.size);
+
+        if (buf) {
+//        size_buff = size_buff/ sizeof(guint8);
+
+
+
+
+        jbyteArray ret = (*env)->NewByteArray(env, gst_map_info.size);
+        (*env)->SetByteArrayRegion (env, ret, 0, gst_map_info.size,  (jbyte*) buf);
+        (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, ret);
+        }
+//    (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, (jbyte*) buf);
+        gst_buffer_unmap(gst_buffer, &gst_map_info);
+
+    }
+
+    return GST_PAD_PROBE_OK;
+}
+
+
