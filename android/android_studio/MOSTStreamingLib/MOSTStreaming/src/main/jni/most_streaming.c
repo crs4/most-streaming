@@ -55,6 +55,7 @@ typedef struct _CustomData {
   gint64 desired_position;      /* Position to seek to, once the pipeline is running */
   GstClockTime last_seek_time;  /* For seeking overflow prevention (throttling) */
   gboolean is_live;             /* Live streams do not use buffering */
+    GstCaps * caps;
 } CustomData;
 
 /* playbin flags */
@@ -358,26 +359,32 @@ static void check_media_size (CustomData *data) {
   GstVideoInfo info;
 
 
-    GstPad* pad;
-    g_signal_emit_by_name (data->pipeline, "get-video-pad", 0, &pad, data);
-    caps = gst_pad_get_current_caps(pad);
-    GST_DEBUG ("PLAY: caps to string %s", gst_caps_to_string (caps));
-
-
-    gst_pad_add_probe (pad, GST_PAD_PROBE_TYPE_BUFFER,
-                       (GstPadProbeCallback) cb_have_frame, data, NULL);
-//    gst_pad_add_probe (pad, GST_PAD_PROBE_TYPE_QUERY_UPSTREAM,
-//                       (GstPadProbeCallback) cb_have_frame, NULL, NULL);
-    GST_DEBUG ("added probe to pad");
-    gst_object_unref (pad);
-
+//    GstPad* pad;
+//    g_signal_emit_by_name (data->pipeline, "get-video-pad", 0, &pad, data);
+//    caps = gst_pad_get_current_caps(pad);
+//
+//    GST_DEBUG ("PLAY: caps to string %s", gst_caps_to_string (caps));
+//
+//
+//
+//    gst_pad_add_probe (pad, GST_PAD_PROBE_TYPE_BUFFER,
+//                       (GstPadProbeCallback) cb_have_frame, data, NULL);
+////    gst_pad_add_probe (pad, GST_PAD_PROBE_TYPE_QUERY_UPSTREAM,
+////                       (GstPadProbeCallback) cb_have_frame, NULL, NULL);
+//    GST_DEBUG ("added probe to pad");
+//    gst_object_unref (pad);
+//
 
 
   /* Retrieve the Caps at the entrance of the video sink */
   g_object_get (data->pipeline, "video-sink", &video_sink, NULL);
   video_sink_pad = gst_element_get_static_pad (video_sink, "sink");
   caps = gst_pad_get_current_caps (video_sink_pad);
-
+    if (caps) {
+        data->caps = caps;
+        gst_pad_add_probe(video_sink_pad, GST_PAD_PROBE_TYPE_BUFFER,
+                          (GstPadProbeCallback) cb_have_frame, data, NULL);
+    }
   GST_DEBUG ("DENTRO CHECK_MEDIA SIZE -> dopo gst_pad_get_current_caps" );
 
     GST_DEBUG ("caps to string %s", gst_caps_to_string (caps));
@@ -397,7 +404,7 @@ static void check_media_size (CustomData *data) {
 	  GST_DEBUG ("DENTRO CHECK_MEDIA SIZE: IMPOSSIBILE RECUPERARE VIDEO INFO FROM CAPS!!");
   }
 
-  gst_caps_unref(caps);
+//  gst_caps_unref(caps);
   gst_object_unref (video_sink_pad);
   gst_object_unref(video_sink);
 }
@@ -906,29 +913,48 @@ static GstPadProbeReturn cb_have_frame (GstPad *pad, GstPadProbeInfo *info, Cust
     gst_buffer = gst_pad_probe_info_get_buffer (info);
 //    gst_buffer = GST_PAD_PROBE_INFO_BUFFER (info);
 //    g_object_get(data->pipeline, "frame", gst_buffer);
-    if (gst_buffer == NULL)
-        GST_DEBUG("gst_buffer == NULL");
+    if (gst_buffer ){
+
+        GstSample *sample = gst_sample_new (gst_buffer,data->caps,
+                                            NULL,
+                                            NULL);
+        if (sample){
+            GST_DEBUG("sample created");
+            char * capsstr = g_strdup_printf ("video/x-raw,format=(string)NV12");
+            GstCaps *to_caps = gst_caps_from_string (capsstr);
+            GstClockTime timeout = 1000000000;
+            GstSample * sample_converted =  gst_video_convert_sample (sample,
+                                                                      to_caps,
+                                                                      timeout,
+                                                                      NULL);
+            if (!sample_converted){
+                GST_DEBUG("conversion failed");
+            }
+            else
+                GST_DEBUG("conversion succeded");
+
+            gst_buffer = gst_sample_get_buffer (sample);
+            GstMapInfo gst_map_info;
+            if (gst_buffer_map (gst_buffer, &gst_map_info, GST_MAP_READ)) {
+                guint8 *buf = gst_map_info.data;
+                GST_DEBUG("before size_buff");
+                GST_DEBUG("gst_map_info->size %d", gst_map_info.size);
+
+                if (buf) {
+        //        size_buff = size_buff/ sizeof(guint8);
 
 
-    GstMapInfo gst_map_info;
-    if (gst_buffer_map (gst_buffer, &gst_map_info, GST_MAP_READ)) {
-        guint8 *buf = gst_map_info.data;
-        GST_DEBUG("before size_buff");
-        GST_DEBUG("gst_map_info->size %d", gst_map_info.size);
-
-        if (buf) {
-//        size_buff = size_buff/ sizeof(guint8);
 
 
+                jbyteArray ret = (*env)->NewByteArray(env, gst_map_info.size);
+                (*env)->SetByteArrayRegion (env, ret, 0, gst_map_info.size,  (jbyte*) buf);
+                (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, ret);
+                }
+        //    (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, (jbyte*) buf);
+                gst_buffer_unmap(gst_buffer, &gst_map_info);
 
-
-        jbyteArray ret = (*env)->NewByteArray(env, gst_map_info.size);
-        (*env)->SetByteArrayRegion (env, ret, 0, gst_map_info.size,  (jbyte*) buf);
-        (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, ret);
+            }
         }
-//    (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, (jbyte*) buf);
-        gst_buffer_unmap(gst_buffer, &gst_map_info);
-
     }
 
     return GST_PAD_PROBE_OK;
