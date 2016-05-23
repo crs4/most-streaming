@@ -187,14 +187,27 @@ GstFlowReturn  onNewBufferFromVideoSource(GstAppSink *appsink,  CustomData *data
 
 
                 jbyteArray ret = (*env)->NewByteArray(env, gst_map_info.size);
-                (*env)->SetByteArrayRegion(env, ret, 0, gst_map_info.size, (jbyte *) buf);
-                (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, ret);
+                if (ret ) {
+                    (*env)->SetByteArrayRegion(env, ret, 0, gst_map_info.size, (jbyte *) buf);
+                    (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, ret);
+
+                }
+                else{
+                    GST_ERROR("out of memory!");
+
+                }
+
                 gst_buffer_unmap(gst_buffer, &gst_map_info);
+                (*env)->ReleaseByteArrayElements(env, ret, (jbyte*) buf, JNI_ABORT);
+                (*env)->DeleteLocalRef(env, ret);
+
             }
             //    (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, (jbyte*) buf);
 
 
         }
+
+    gst_sample_unref (sample);
     }
     return GST_FLOW_OK;
 }
