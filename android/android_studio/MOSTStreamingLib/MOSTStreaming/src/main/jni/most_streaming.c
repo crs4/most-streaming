@@ -162,18 +162,18 @@ GstFlowReturn  onNewBufferFromVideoSource(GstAppSink *appsink,  CustomData *data
 
         GstBuffer *gst_buffer;
         GST_DEBUG("sample created");
-        char *capsstr = g_strdup_printf("video/x-raw,format=(string)NV12");
-        GstCaps *to_caps = gst_caps_from_string(capsstr);
-        GstClockTime timeout = 1000000000;
-        GstSample *sample_converted = gst_video_convert_sample(sample,
-                                                               to_caps,
-                                                               timeout,
-                                                               NULL);
-        if (!sample_converted) {
-            GST_DEBUG("conversion failed");
-        }
-        else
-            GST_DEBUG("conversion succeded");
+//        char *capsstr = g_strdup_printf("video/x-raw,format=(string)NV12");
+//        GstCaps *to_caps = gst_caps_from_string(capsstr);
+//        GstClockTime timeout = 1000000000;
+//        GstSample *sample_converted = gst_video_convert_sample(sample,
+//                                                               to_caps,
+//                                                               timeout,
+//                                                               NULL);
+//        if (!sample_converted) {
+//            GST_DEBUG("conversion failed");
+//        }
+//        else
+//            GST_DEBUG("conversion succeded");
 
         gst_buffer = gst_sample_get_buffer(sample);
         GstMapInfo gst_map_info;
@@ -189,9 +189,10 @@ GstFlowReturn  onNewBufferFromVideoSource(GstAppSink *appsink,  CustomData *data
                 jbyteArray ret = (*env)->NewByteArray(env, gst_map_info.size);
                 (*env)->SetByteArrayRegion(env, ret, 0, gst_map_info.size, (jbyte *) buf);
                 (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, ret);
+                gst_buffer_unmap(gst_buffer, &gst_map_info);
             }
             //    (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, (jbyte*) buf);
-            gst_buffer_unmap(gst_buffer, &gst_map_info);
+
 
         }
     }
@@ -546,7 +547,7 @@ static void *app_function(void *userdata) {
     GSource *bus_source;
     GError *error = NULL;
     guint flags;
-    GstElement *bin, *videosink, *appsink, *tee, *video_queue, * app_queue;
+    GstElement *bin, *videosink, *appsink, *tee, *video_queue, * app_queue, *video_convert;
     GstPad *pad;
 
     GST_DEBUG("Creating pipeline in CustomData at %p", data);
@@ -584,9 +585,10 @@ static void *app_function(void *userdata) {
     tee = gst_element_factory_make ("tee", "tee");
     video_queue = gst_element_factory_make ("queue", "video_queue");
     app_queue = gst_element_factory_make ("queue", "app_queue");
+    video_convert = gst_element_factory_make ("videoconvert", "video_convert");
 //
-    gst_bin_add_many(GST_BIN (bin), videosink, appsink, tee, video_queue, app_queue, NULL);
-    if (!data->pipeline || !bin || !videosink || !appsink || !tee || !video_queue || !app_queue) {
+    gst_bin_add_many(GST_BIN (bin), videosink, appsink, tee, video_queue, app_queue, video_convert, NULL);
+    if (!data->pipeline || !bin || !videosink || !appsink || !tee || !video_queue || !app_queue || !video_convert) {
 
         GST_ERROR("some element not initizialized");
 //        if (!data->pipeline){
@@ -610,12 +612,25 @@ static void *app_function(void *userdata) {
 //        if (!app_queue){
 //            GST_ERROR("app_queue element not initizialized");
 //        }
+        if (!video_convert){
+            GST_ERROR("app_queue element not initizialized");
+        }
 
         return NULL;
     }
 //
+
+
+    char *capsstr = g_strdup_printf("video/x-raw,format=(string)NV12");
+    GstCaps *to_caps = gst_caps_from_string(capsstr);
+
     gst_element_link (video_queue, videosink);
-    gst_element_link (app_queue, appsink);
+
+    if(!gst_element_link_filtered (app_queue, video_convert, to_caps)){
+        GST_ERROR("error linking app_queue, video_convert");
+        return NULL;
+    }
+    gst_element_link (video_convert, appsink);
 
     gst_element_link (tee, app_queue);
     gst_element_link (tee, video_queue);
