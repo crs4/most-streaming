@@ -932,8 +932,12 @@ static jint gst_native_get_latency(JNIEnv *env, jobject thiz) {
 /* Set pipeline to PLAYING state */
 static void gst_native_play(JNIEnv *env, jobject thiz) {
 
+    GST_DEBUG("gst_native_play!");
     CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
-    if (!data) return;
+    if (!data) {
+        GST_DEBUG("gst_native_play Custom data not defined!");
+        return;
+    }
 
     GST_DEBUG("Setting state to PLAYING for stream:%s", data->stream_name);
     data->is_live = (gst_element_set_state(data->pipeline, GST_STATE_PLAYING) ==

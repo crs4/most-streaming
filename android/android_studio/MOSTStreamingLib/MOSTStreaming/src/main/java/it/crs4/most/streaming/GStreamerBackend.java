@@ -66,6 +66,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     private Size videoSize = null;
     private String errorMsg = "";
 	private ArrayList<IFrameListener> listeners = new ArrayList<IFrameListener>();
+	private boolean playScheduled = false;
 
     static {
 
@@ -172,7 +173,14 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
 		this.streamState = StreamState.PLAYING_REQUEST;
 		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Playing request for Stream: " + this.streamName, this));
-		nativePlay();
+		Log.d(TAG, "before call nativePlay");
+		if (streamState.ordinal() < StreamState.PAUSED.ordinal()){
+			playScheduled = true;
+			Log.d(TAG, "play scheduled");
+		}
+
+		else
+			nativePlay();
 	}
 
 	/**
@@ -256,6 +264,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	Log.d(TAG, "onStreamStateChanged: state from state:" + oldState + " to:" + newState);
     	//this.streamState = GStreamerBackend.getStreamStateByGstState(newState);
 
+
     	// from pause to play or from play to pause
     	if ((oldState==3 && newState==4) || (oldState==4 && newState==3)) {
     		this.streamState = GStreamerBackend.getStreamStateByGstState(newState);
@@ -269,6 +278,12 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
     		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this));
     	}
+
+		if (this.stream_initialized && playScheduled){
+				this.nativePlay();
+				playScheduled = false;
+
+			}
 
     }
 
