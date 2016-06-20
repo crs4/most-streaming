@@ -124,6 +124,9 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "No valid surface provided for the stream: " + this.streamName, this));
     	    return;
     	}
+		else{
+			surfaceInit(surface.getHolder().getSurface());
+		}
 
     	if (this.streamState!=StreamState.DEINITIALIZED)
     	{
@@ -173,14 +176,15 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
 		this.streamState = StreamState.PLAYING_REQUEST;
 		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Playing request for Stream: " + this.streamName, this));
-		Log.d(TAG, "before call nativePlay");
-		if (streamState.ordinal() < StreamState.PAUSED.ordinal()){
-			playScheduled = true;
-			Log.d(TAG, "play scheduled");
-		}
-
-		else
+		Log.d(TAG, "before call nativePlay, current state streamState: " + streamState);
+//		if (streamState.ordinal() < StreamState.PAUSED.ordinal()){
+//			playScheduled = true;
+//			Log.d(TAG, "play scheduled");
+//		}
+//
+//		else
 			nativePlay();
+		Log.d(TAG, "nativePlay called");
 	}
 
 	/**
@@ -325,7 +329,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
             int height) {
         Log.d("GStreamer", "Surface changed to format " + format + " width "
                 + width + " height " + height);
-        //this.surfaceInit(holder.getSurface());
+        this.surfaceInit(holder.getSurface());
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
@@ -398,6 +402,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	private boolean setUriAndLatency(String uri, int latency)
 	{   Log.d(TAG, "Called setUriAndLatency with proposed uri:" + uri + " latency:" + latency);
 		boolean result = nativeSetUriAndLatency(uri, latency); // Set the URI of the media to play
+		Log.d(TAG, "result setUriAndLatency: " + result);
 		return result;
 	}// Set the URI of the media to play
 
@@ -411,7 +416,10 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		{
 			try{
 				this.latency = Integer.parseInt(latencyProperty);
-			}catch (NumberFormatException e) {}
+			}
+			catch (NumberFormatException e) {
+				e.printStackTrace();
+			}
 
 		}
 		return setUriAndLatency(this.uri, this.latency);
