@@ -125,7 +125,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	    return;
     	}
 		else{
-			surfaceInit(surface.getHolder().getSurface());
+//			Log.d(TAG, "surface is not null, calling surfaceInit");
+//			surfaceInit(surface.getHolder().getSurface());
 		}
 
     	if (this.streamState!=StreamState.DEINITIALIZED)
@@ -146,6 +147,10 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	{
     		this.surfaceView = surface;
 	        this.surfaceView.getHolder().addCallback(this);
+			if (surface.getHolder().getSurface().isValid()){
+				Log.d(TAG, "surface ready, calling surfaceInit");
+				surfaceInit(surface.getHolder().getSurface());
+			}
     	}
     }
 

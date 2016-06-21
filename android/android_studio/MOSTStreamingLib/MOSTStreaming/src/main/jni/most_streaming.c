@@ -529,6 +529,9 @@ static void check_initialization_complete(CustomData *data) {
     GST_DEBUG("CALLED CHECK_INITIALIZATION_COMPLETE!!!!");
 
     JNIEnv *env = get_jni_env();
+    GST_DEBUG("!data->initialized %d",  !data->initialized);
+    GST_DEBUG("!data->native_window %d", !data->native_window);
+    GST_DEBUG("!data->main_loop %d", !data->main_loop);
     if (!data->initialized && data->native_window && data->main_loop) {
         GST_DEBUG(
                 "Initialization completed... notifying application. native_window:%p main_loop:%p",
