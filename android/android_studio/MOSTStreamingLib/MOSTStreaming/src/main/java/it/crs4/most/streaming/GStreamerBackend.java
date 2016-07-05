@@ -36,7 +36,7 @@ import java.util.ArrayList;
 class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
 	// native methods
-    private native boolean nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
+    private native boolean nativeInit(String streamName, int latency, boolean frameAvailable);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
     private native boolean nativeSetUri(String uri); // Set the URI of the media to play
     private native boolean nativeSetUriAndLatency(String uri, int latency); // Set the URI of the media to play
@@ -110,13 +110,18 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     }
 
     @Override
-	public void prepare(SurfaceView surface)
+	public void prepare(SurfaceView surface){
+		prepare(surface, false);
+
+	}
+	@Override
+	public void prepare(SurfaceView surface, boolean frameCallback)
 		 {
 	    	Log.d(TAG, "preparing IStream instance...");
-	        this.initStream(surface);
+	        this.initStream(surface, frameCallback);
 	}
 
-    private void initStream(SurfaceView surface) {
+    private void initStream(SurfaceView surface, boolean frameCallback) {
 
     	if (surface==null)
     	{
@@ -137,7 +142,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	this.streamState = StreamState.INITIALIZING;
     	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Inizializating Stream " + this.streamName, this));
 
-    	boolean native_init_result = nativeInit(this.streamName, this.latency);
+    	boolean native_init_result = nativeInit(this.streamName, this.latency, frameCallback);
     	if (!native_init_result)
     	{
     		this.streamState = StreamState.DEINITIALIZED;
@@ -469,8 +474,6 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 			l.frameReady(frame);
 		}
 	}
-
-
 }
 
 

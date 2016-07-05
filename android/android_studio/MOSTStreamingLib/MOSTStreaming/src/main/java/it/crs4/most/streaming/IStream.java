@@ -51,7 +51,8 @@ public interface IStream {
 	 *
 	 */
 	public void prepare(SurfaceView surface);
-	
+	public void prepare(SurfaceView surface, boolean frameCallback);
+
     /**
      * Play the stream
      */

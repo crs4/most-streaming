@@ -71,6 +71,7 @@ typedef struct _CustomData {
     gboolean is_live;
     /* Live streams do not use buffering */
     GstCaps *caps;
+    gboolean frame_callback;
 } CustomData;
 
 /* playbin flags */
@@ -153,34 +154,18 @@ GstFlowReturn  onNewPrerollFromVideoSource(GstAppSink *appsink,  CustomData *dat
 
 GstFlowReturn  onNewBufferFromVideoSource(GstAppSink *appsink,  CustomData *data){
     JNIEnv *env = get_jni_env();
-//    GST_DEBUG("onNewBufferFromVideoSource");
-
     GstSample * sample =  gst_app_sink_pull_sample((GstAppSink *)appsink);
 
     if (sample) {
 
 
         GstBuffer *gst_buffer;
-        GST_DEBUG("sample created");
-//        char *capsstr = g_strdup_printf("video/x-raw,format=(string)NV12");
-//        GstCaps *to_caps = gst_caps_from_string(capsstr);
-//        GstClockTime timeout = 1000000000;
-//        GstSample *sample_converted = gst_video_convert_sample(sample,
-//                                                               to_caps,
-//                                                               timeout,
-//                                                               NULL);
-//        if (!sample_converted) {
-//            GST_DEBUG("conversion failed");
-//        }
-//        else
-//            GST_DEBUG("conversion succeded");
-
         gst_buffer = gst_sample_get_buffer(sample);
         GstMapInfo gst_map_info;
         if (gst_buffer_map(gst_buffer, &gst_map_info, GST_MAP_READ)) {
             guint8 *buf = gst_map_info.data;
-            GST_DEBUG("before size_buff");
-            GST_DEBUG("gst_map_info->size %d", gst_map_info.size);
+            //GST_DEBUG("before size_buff");
+            //GST_DEBUG("gst_map_info->size %d", gst_map_info.size);
 
             if (buf) {
                 //        size_buff = size_buff/ sizeof(guint8);
@@ -206,6 +191,9 @@ GstFlowReturn  onNewBufferFromVideoSource(GstAppSink *appsink,  CustomData *data
 
 
         }
+//        if(gst_buffer){
+//            gst_buffer_unref(gst_buffer);
+//        }
 
     gst_sample_unref (sample);
     }
@@ -465,11 +453,6 @@ static void check_media_size(CustomData *data) {
     g_object_get(data->pipeline, "video-sink", &video_sink, NULL);
     video_sink_pad = gst_element_get_static_pad(video_sink, "sink");
     caps = gst_pad_get_current_caps(video_sink_pad);
-//    if (caps) {
-//        data->caps = caps;
-//        gst_pad_add_probe(video_sink_pad, GST_PAD_PROBE_TYPE_BUFFER,
-//                          (GstPadProbeCallback) cb_have_frame, data, NULL);
-//    }
     GST_DEBUG("DENTRO CHECK_MEDIA SIZE -> dopo gst_pad_get_current_caps");
 
     GST_DEBUG("caps to string %s", gst_caps_to_string(caps));
@@ -555,7 +538,7 @@ static void check_initialization_complete(CustomData *data) {
 }
 
 /* Main method for the native code. This is executed on its own thread. */
-static void *app_function(void *userdata) {
+static void *app_function(void *userdata, jboolean frame_available_callback) {
     JavaVMAttachArgs args;
     GstBus *bus;
     CustomData *data = (CustomData *) userdata;
@@ -582,106 +565,68 @@ static void *app_function(void *userdata) {
         return NULL;
     }
 
-//    if (error) {
-//        gchar *message = g_strdup_printf("Unable to build pipeline: %s", error->message);
-//        g_clear_error(&error);
-//        set_ui_message(message, data);
-//        g_free(message);
-//        return NULL;
-//    }
+
 
     /* Disable subtitles */
     g_object_get(data->pipeline, "flags", &flags, NULL);
     flags &= ~GST_PLAY_FLAG_TEXT;
     g_object_set(data->pipeline, "flags", flags, NULL);
 
-    bin = gst_bin_new ("my_bin");
-    videosink = gst_element_factory_make ("autovideosink", "videosink");
-    appsink = gst_element_factory_make ("appsink", "appsink");
-    tee = gst_element_factory_make ("tee", "tee");
-    video_queue = gst_element_factory_make ("queue", "video_queue");
-    app_queue = gst_element_factory_make ("queue", "app_queue");
-    video_convert = gst_element_factory_make ("videoconvert", "video_convert");
-//
-    gst_bin_add_many(GST_BIN (bin), videosink, appsink, tee, video_queue, app_queue, video_convert, NULL);
-    if (!data->pipeline || !bin || !videosink || !appsink || !tee || !video_queue || !app_queue || !video_convert) {
 
-        GST_ERROR("some element not initizialized");
-//        if (!data->pipeline){
-//            GST_ERROR("playbin element not initizialized");
-//        }
-//        if (!bin){
-//            GST_ERROR("bin element not initizialized");
-//        }
-//        if (!videosink){
-//            GST_ERROR("videosink element not initizialized");
-//        }
-//        if (!appsink){
-//            GST_ERROR("appsink element not initizialized");
-//        }
-//        if (!tee){
-//            GST_ERROR("tee element not initizialized");
-//        }
-//        if (!video_queue){
-//            GST_ERROR("video_queue element not initizialized");
-//        }
-//        if (!app_queue){
-//            GST_ERROR("app_queue element not initizialized");
-//        }
-        if (!video_convert){
-            GST_ERROR("app_queue element not initizialized");
+    if (data->frame_callback) {
+        bin = gst_bin_new("my_bin");
+        videosink = gst_element_factory_make("autovideosink", "videosink");
+        appsink = gst_element_factory_make("appsink", "appsink");
+        tee = gst_element_factory_make("tee", "tee");
+        video_queue = gst_element_factory_make("queue", "video_queue");
+        app_queue = gst_element_factory_make("queue", "app_queue");
+        video_convert = gst_element_factory_make("videoconvert", "video_convert");
+//
+        gst_bin_add_many(GST_BIN(bin), videosink, appsink, tee, video_queue, app_queue,
+                         video_convert, NULL);
+        if (!data->pipeline || !bin || !videosink || !appsink || !tee || !video_queue ||
+            !app_queue || !video_convert) {
+
+            GST_ERROR("some element not initizialized");
+            if (!video_convert) {
+                GST_ERROR("app_queue element not initizialized");
+            }
+
+            return NULL;
         }
+//
 
-        return NULL;
+
+        char *capsstr = g_strdup_printf("video/x-raw,format=(string)NV12");
+        GstCaps *to_caps = gst_caps_from_string(capsstr);
+
+        gst_element_link(video_queue, videosink);
+
+        if (!gst_element_link_filtered(app_queue, video_convert, to_caps)) {
+            GST_ERROR("error linking app_queue, video_convert");
+            return NULL;
+        }
+        gst_element_link(video_convert, appsink);
+
+        gst_element_link(tee, app_queue);
+        gst_element_link(tee, video_queue);
+
+        pad = gst_element_get_static_pad(tee, "sink");
+        gst_element_add_pad(bin, gst_ghost_pad_new("sink", pad));
+        gst_object_unref(GST_OBJECT(pad));
+
+        g_object_set(G_OBJECT(data->pipeline), "video-sink", bin, NULL);
+
+
+        GstAppSinkCallbacks cbs; // Does this need to be kept alive?
+
+        // Set Video Sink callback methods
+        cbs.eos = &onEos;
+        cbs.new_preroll = &onNewPrerollFromVideoSource;
+        cbs.new_sample = &onNewBufferFromVideoSource;
+        gst_app_sink_set_callbacks(GST_APP_SINK(appsink), &cbs, data, NULL);
+
     }
-//
-
-
-    char *capsstr = g_strdup_printf("video/x-raw,format=(string)NV12");
-    GstCaps *to_caps = gst_caps_from_string(capsstr);
-
-    gst_element_link (video_queue, videosink);
-
-    if(!gst_element_link_filtered (app_queue, video_convert, to_caps)){
-        GST_ERROR("error linking app_queue, video_convert");
-        return NULL;
-    }
-    gst_element_link (video_convert, appsink);
-
-    gst_element_link (tee, app_queue);
-    gst_element_link (tee, video_queue);
-
-    pad = gst_element_get_static_pad (tee, "sink");
-    gst_element_add_pad (bin, gst_ghost_pad_new ("sink", pad));
-    gst_object_unref (GST_OBJECT (pad));
-
-    g_object_set (G_OBJECT (data->pipeline), "video-sink", bin, NULL);
-
-    GstAppSinkCallbacks cbs; // Does this need to be kept alive?
-
-    // Set Video Sink callback methods
-    cbs.eos = &onEos;
-    cbs.new_preroll = &onNewPrerollFromVideoSource;
-    cbs.new_sample = &onNewBufferFromVideoSource;
-    gst_app_sink_set_callbacks( GST_APP_SINK( appsink ), &cbs, data, NULL );
-
-
-
-
-
-//
-//    GstElement * appsink = gst_element_factory_make("appsink", "asink");
-//    gst_app_sink_set_emit_signals((GstAppSink*)appsink, 1);
-//    gst_app_sink_set_drop((GstAppSink*)appsink, 1);
-//    gst_app_sink_set_max_buffers((GstAppSink*)appsink, 1);
-//
-////creating and initialising pipeline
-//
-//    g_object_set(data->pipeline, "video-sink", appsink, NULL);
-//
-////    g_signal_connect(appsink, "new-buffer", G_CALLBACK(DisplayFrame), (gpointer) mark);
-
-
     /* Set the pipeline to READY, so it can already accept a window handle, if we have one */
     data->target_state = GST_STATE_READY;
     gst_element_set_state(data->pipeline, GST_STATE_READY);
@@ -738,7 +683,7 @@ static void *app_function(void *userdata) {
  */
 
 /* Instruct the native code to create its internal data structure, pipeline and thread */
-static jboolean gst_native_init(JNIEnv *env, jobject thiz, jstring stream_name, jint latency) {
+static jboolean gst_native_init(JNIEnv *env, jobject thiz, jstring stream_name, jint latency, jboolean frame_available) {
     CustomData *data = g_new0(CustomData, 1);
     data->desired_position = GST_CLOCK_TIME_NONE;
     data->last_seek_time = GST_CLOCK_TIME_NONE;
@@ -755,6 +700,7 @@ static jboolean gst_native_init(JNIEnv *env, jobject thiz, jstring stream_name, 
     GST_DEBUG("Created CustomData at %p", data);
 
     data->app = (*env)->NewGlobalRef(env, thiz);
+    data->frame_callback = (gboolean) frame_available;
     GST_DEBUG("Created GlobalRef for app object at %p", data->app);
     pthread_create(&data->gst_app_thread, NULL, &app_function, data);
 
@@ -1051,7 +997,7 @@ static void gst_native_surface_finalize(JNIEnv *env, jobject thiz) {
 
 /* List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-        {"nativeInit",             "(Ljava/lang/String;I)Z", (void *) gst_native_init},
+        {"nativeInit",             "(Ljava/lang/String;IZ)Z", (void *) gst_native_init},
         {"nativeFinalize",         "()V",                    (void *) gst_native_finalize},
         {"nativeGetLatency",       "()I",                    (void *) gst_native_get_latency},
         {"nativeSetLatency",       "(I)Z",                   (void *) gst_native_set_latency},
@@ -1092,8 +1038,7 @@ static GstPadProbeReturn cb_have_frame(GstPad *pad, GstPadProbeInfo *info, Custo
     __android_log_print(ANDROID_LOG_INFO, "cb_have_frame", "PROBE OK");
     GstBuffer *gst_buffer;
     gst_buffer = gst_pad_probe_info_get_buffer(info);
-//    gst_buffer = GST_PAD_PROBE_INFO_BUFFER (info);
-//    g_object_get(data->pipeline, "frame", gst_buffer);
+
     if (gst_buffer) {
 
         GstSample *sample = gst_sample_new(gst_buffer, data->caps,
