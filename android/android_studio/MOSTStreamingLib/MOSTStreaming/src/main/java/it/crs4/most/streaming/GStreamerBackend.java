@@ -465,7 +465,6 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	}
 
 	public void onFrameAvailable(byte [] frame){
-		Log.d(TAG, "onFrameAvailable");
 		for(IFrameListener l: listeners){
 			l.frameReady(frame);
 		}
