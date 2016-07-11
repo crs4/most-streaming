@@ -9,6 +9,7 @@ LOCAL_LDLIBS := -llog -landroid
 include $(BUILD_SHARED_LIBRARY)
 
 # You should define GSTREAMER_ROOT as your local gstreamer SDK path
+GSTREAMER_ROOT := /home/vitto/Code/gstreamer-1.0-android-arm-1.2.4.1-debug
 GSTREAMER_SDK_ROOT_ANDROID := $(GSTREAMER_ROOT)
 
 ifndef GSTREAMER_SDK_ROOT
