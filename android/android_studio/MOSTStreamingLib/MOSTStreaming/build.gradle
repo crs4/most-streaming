@@ -1,11 +1,10 @@
 apply plugin: 'com.android.model.library'
-apply plugin: 'maven'
-
+apply plugin: 'maven-publish'
 
 model {
     android {
         compileSdkVersion 23
-        buildToolsVersion "23.0.2"
+        buildToolsVersion "23.0.3"
 
         defaultConfig {
             minSdkVersion.apiLevel 8
@@ -14,31 +13,23 @@ model {
             versionName "1.0"
             
         }
-//        ndk {
-//            moduleName "most_streaming"
-//
-//        }
-
         buildTypes {
             release {
                 minifyEnabled false
                 proguardFiles.add(file('proguard-rules.pro'))
             }
         }
-
         productFlavors {
             create("arm") {
                 ndk.abiFilters.add("armeabi")
             }
         }
-
         repositories {
             mavenLocal()
         }
-
         sources {
             main {
-                jni {
+                java {
                     source {
                         srcDirs = []
                     }
@@ -71,23 +62,25 @@ tasks.withType(JavaCompile) {
     compileTask -> compileTask.dependsOn ndkBuild
 }
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository url:  mavenLocal().url
-            pom.version = '1.0'
-            pom.groupId = 'it.crs4.most.streaming'
-            pom.artifactId = 'MOSTStreaming'
-        }
-    }
-}
-
-artifacts {
-    archives file('build/outputs/aar/MOSTStreaming-arm-debug.aar')
-}
-
 dependencies {
     compile 'com.android.support:appcompat-v7:23.2.0'
     compile 'com.mcxiaoke.volley:library:1.0.19'
     testCompile 'junit:junit:4.12'
+}
+
+publishing {
+    repositories {
+        maven {
+            url mavenLocal().url
+        }
+    }
+    publications {
+        aar(MavenPublication) {
+            groupId 'it.crs4.most.streaming'
+            version = '1.0'
+            artifactId 'MOSTStreaming'
+            artifact("build/outputs/aar/MOSTStreaming-arm-debug.aar")
+
+        }
+    }
 }
