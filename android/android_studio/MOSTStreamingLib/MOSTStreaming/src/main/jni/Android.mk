@@ -8,14 +8,19 @@ LOCAL_SHARED_LIBRARIES := gstreamer_android
 LOCAL_LDLIBS := -llog -landroid
 include $(BUILD_SHARED_LIBRARY)
 
+# You should define GSTREAMER_ROOT as your local gstreamer SDK path
+
+ifndef GSTREAMER_ROOT
+    $(error "GSTREAMER_ROOT env variable not set, aborting...")
+endif
+
 GSTREAMER_SDK_ROOT_ANDROID := $(GSTREAMER_ROOT)
 
 ifndef GSTREAMER_SDK_ROOT
-ifndef GSTREAMER_SDK_ROOT_ANDROID
-$(error GSTREAMER_SDK_ROOT_ANDROID is not defined!)
-endif
-GSTREAMER_SDK_ROOT := $(GSTREAMER_SDK_ROOT_ANDROID)
-GSTREAMER_ROOT := $(GSTREAMER_SDK_ROOT_ANDROID)
+    ifndef GSTREAMER_SDK_ROOT_ANDROID
+        $(error GSTREAMER_SDK_ROOT_ANDROID is not defined!)
+    endif
+    GSTREAMER_SDK_ROOT := $(GSTREAMER_SDK_ROOT_ANDROID)
 endif
 GSTREAMER_NDK_BUILD_PATH := $(GSTREAMER_SDK_ROOT)/share/gst-android/ndk-build/
 

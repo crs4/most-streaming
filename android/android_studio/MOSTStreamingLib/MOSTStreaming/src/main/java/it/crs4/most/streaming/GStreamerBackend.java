@@ -29,13 +29,14 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import java.util.ArrayList;
 
 
 //  the scope of this class is reserved to this current package. Don't instance this class, but use the StreamingFactory.getStream() method instead.
 class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
 	// native methods
-    private native boolean nativeInit(String streamName, int latency);     // Initialize native code, build pipeline, etc
+    private native boolean nativeInit(String streamName, int latency, boolean frameAvailable);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
     private native boolean nativeSetUri(String uri); // Set the URI of the media to play
     private native boolean nativeSetUriAndLatency(String uri, int latency); // Set the URI of the media to play
@@ -48,13 +49,13 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     private native void nativeSurfaceInit(Object surface); // A new surface is available
     private native void nativeSurfaceFinalize(); // Surface about to be destroyed
     private long native_custom_data;      // Native code will use this to keep private data
-    
+
     private static final String TAG = "GSTREAMER_BACKEND";
     // local fields
     private Context context = null;
     private Handler notificationHandler = null;
 	private SurfaceView surfaceView;
-    
+
     private String uri = null;
     private String streamName = null;
     private StreamState streamState = StreamState.DEINITIALIZED;
@@ -64,65 +65,75 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
     private Size videoSize = null;
     private String errorMsg = "";
-    
+	private ArrayList<IFrameListener> listeners = new ArrayList<IFrameListener>();
+	private boolean playScheduled = false;
+
     static {
-    	
+
      Log.d(TAG,"Loading streaming lib backend native libraries..");
      /*
      Log.d(TAG,"Loading gstreamer_android...");
      System.loadLibrary("gstreamer_android");
      */
-     
+
      Log.d(TAG,"Loading most_streaming...");
      System.loadLibrary("most_streaming");
      Log.d(TAG,"Libraries loaded.");
-     
+
      Log.d(TAG,"Loading native class and methods references...");
      lib_initialized = nativeClassInit();
     }
-    
+
     public GStreamerBackend(HashMap<String, String> configParams ,Handler notificationHandler) throws Exception
     {
     	Log.d((TAG), "GStreamerBackend instance *****");
     	if (!lib_initialized) throw new Exception("Error initilializing the native library.");
     	if (stream_initialized) throw new Exception("Error preparing the strem because it results already initialized");
-    	
-    	
+
+
     	if (notificationHandler==null) throw new IllegalArgumentException("Handler parameter cannot be null");
-    	
+
     	if  (!configParams.containsKey("name")) throw new IllegalArgumentException("param name not found in configParams");
 		if (!configParams.containsKey("uri"))  throw new IllegalArgumentException("param uri not found in configParams ");
-		
+
 		this.notificationHandler = notificationHandler;
 		this.streamName =   configParams.get("name");
     	this.uri = configParams.get("uri");
     	this.latency = configParams.containsKey("latency") ?  Integer.valueOf(configParams.get("latency")) : 200;
-    	
-    	this.notificationHandler = notificationHandler;
     }
-    
+
     private void notifyState(StreamingEventBundle myStateBundle)
     {
+		Log.d(TAG, "notifyState");
     	Message m = Message.obtain(this.notificationHandler,myStateBundle.getEventType().ordinal(), myStateBundle);
 		m.sendToTarget();
     }
-    
+
     @Override
-	public void prepare(SurfaceView surface)  
-		 {
-	    	Log.d((TAG), "preparing IStream instance...");
-	        this.initStream(surface);
+	public void prepare(SurfaceView surface){
+		prepare(surface, false);
+
 	}
-    
-    private void initStream(SurfaceView surface) {
-    	
-    	if (surface==null) 
+	@Override
+	public void prepare(SurfaceView surface, boolean frameCallback)
+		 {
+	    	Log.d(TAG, "preparing IStream instance...");
+	        this.initStream(surface, frameCallback);
+	}
+
+    private void initStream(SurfaceView surface, boolean frameCallback) {
+
+    	if (surface==null)
     	{
     		this.streamState = StreamState.DEINITIALIZED;
     		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_ERROR, "No valid surface provided for the stream: " + this.streamName, this));
     	    return;
     	}
-    	
+		else{
+//			Log.d(TAG, "surface is not null, calling surfaceInit");
+//			surfaceInit(surface.getHolder().getSurface());
+		}
+
     	if (this.streamState!=StreamState.DEINITIALIZED)
     	{
     		Log.d(TAG,"The stream is currently on state:" + this.streamState + " prepare method ignored..");
@@ -130,8 +141,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	}
     	this.streamState = StreamState.INITIALIZING;
     	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Inizializating Stream " + this.streamName, this));
-    	
-    	boolean native_init_result = nativeInit(this.streamName, this.latency);
+
+    	boolean native_init_result = nativeInit(this.streamName, this.latency, frameCallback);
     	if (!native_init_result)
     	{
     		this.streamState = StreamState.DEINITIALIZED;
@@ -141,23 +152,27 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	{
     		this.surfaceView = surface;
 	        this.surfaceView.getHolder().addCallback(this);
+			if (surface.getHolder().getSurface().isValid()){
+				Log.d(TAG, "surface ready, calling surfaceInit");
+				surfaceInit(surface.getHolder().getSurface());
+			}
     	}
     }
-    
+
     @Override
     public Size getVideoSize()
     {
     	return this.videoSize;
     }
-    
+
     /**
-     * 
+     *
      * @return the rendering Surface
      */
     public SurfaceView getSurfaceView() {
     	return this.surfaceView;
     }
-    
+
     /**
      * Play the stream
      */
@@ -168,12 +183,20 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 			Log.d(TAG,"The stream is already playing...request ignored");
 			return;
 		}
-		
+
 		this.streamState = StreamState.PLAYING_REQUEST;
 		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Playing request for Stream: " + this.streamName, this));
-		nativePlay();
+		Log.d(TAG, "before call nativePlay, current state streamState: " + streamState);
+//		if (streamState.ordinal() < StreamState.PAUSED.ordinal()){
+//			playScheduled = true;
+//			Log.d(TAG, "play scheduled");
+//		}
+//
+//		else
+			nativePlay();
+		Log.d(TAG, "nativePlay called");
 	}
-	
+
 	/**
 	 * pause the stream
 	 */
@@ -181,11 +204,11 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		Log.d(TAG,"Trying to pause stream...");
 		nativePause();
 	}
-	
-	
-	
-    
-	
+
+
+
+
+
 	@Override
 	public void destroy() {
 		Log.d(TAG, "Called destroy() in GSTEREAMER BACKEND");
@@ -196,7 +219,7 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		}
 		this.streamState = StreamState.DEINITIALIZING;
 		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Deinizializating Stremm " + this.streamName, this));
-    	
+
 		nativeFinalize();
 	}
 
@@ -204,10 +227,10 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 	public void surfaceInit(Surface surface) {
 		nativeSurfaceInit(surface);
 	}
-	
+
 	public void surfaceFinalize() {
 		nativeSurfaceFinalize();
-		
+
 	}
 	 // Called from native code
     private void setMessage(final String message)
@@ -215,33 +238,33 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	Log.d("GSTREAMER_BACKEND", "Message from Gstreamer:" + message);
     	//this.gstListener.onMessageReceived(this,"From Backend:" + message);
     }
-    
+
     // Called from native code
     private void onGStreamerInitialized()
-    {   
+    {
     	Log.d("GSTREAMER_BACKEND", "Called onGStreamerInitialized()");
-    	
-    	
+
+
     	this.streamState = StreamState.INITIALIZED;
     	Log.d("GSTREAMER_BACKEND", "Stream initialized");
     	if (!this.stream_initialized)
-    	{   
-    		
+    	{
+
     		this.setUri(this.uri);
     		this.stream_initialized = true;
     		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream " + this.streamName + " initialized: (uri:" +this.uri + ")" , this));
-    	
+
     	}
     	else{
     		Log.w(TAG, "Stream already initialized.Unexpected callback from gstreamer ?!");
     	}
-    		
+
     }
-    
-    
+
+
     //Called from the native code when an error occurred
     private void onStreamError(String info)
-    {   
+    {
     	String  infoMsg = this.getName() + ":" + info;
     	Log.e(TAG, "Stream Error:" + info);
     	this.errorMsg = info;
@@ -249,12 +272,13 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	this.streamState = StreamState.ERROR;
     	this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this));
     }
-    
+
     // Called from native code when the streamState of the native stream changes
     private void onStreamStateChanged(int oldState, int newState){
     	Log.d(TAG, "onStreamStateChanged: state from state:" + oldState + " to:" + newState);
     	//this.streamState = GStreamerBackend.getStreamStateByGstState(newState);
-    	
+
+
     	// from pause to play or from play to pause
     	if ((oldState==3 && newState==4) || (oldState==4 && newState==3)) {
     		this.streamState = GStreamerBackend.getStreamStateByGstState(newState);
@@ -265,12 +289,18 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	{
     		this.stream_initialized = false;
     		this.streamState = GStreamerBackend.getStreamStateByGstState(newState);
-    		
+
     		this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + this.streamState, this));
     	}
-    	
+
+		if (this.stream_initialized && playScheduled){
+				this.nativePlay();
+				playScheduled = false;
+
+			}
+
     }
-    
+
     // GST_STATE_VOID_PENDING        = 0,
    	// GST_STATE_NULL                = 1, // no resources allocated
     // GST_STATE_READY               = 2, // all no-streaming specific resources allocated
@@ -289,13 +319,13 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
     	else
     		throw new IllegalArgumentException("Unknown pipeline streamState received from gstreamer native code:" + gstState);
     }
-    
+
      // Called from native code
-    private void setCurrentPosition(final int position, final int duration) 
+    private void setCurrentPosition(final int position, final int duration)
     {
     	//Log.i ("GStreamer", "setCurrentPosition: " + position + " on duration;" + duration);
     }
-    
+
     // Called from native code when the size of the media changes or is first detected.
     // Inform the video surface about the new size and recalculate the layout.
     private void onMediaSizeChanged (int width, int height) {
@@ -303,13 +333,13 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
         this.videoSize = new Size(width, height);
         this.notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.VIDEO_SIZE_CHANGED, "Stream state changed to:" + this.streamState, this));
     }
-    
-   
+
+
 	public void surfaceChanged(SurfaceHolder holder, int format, int width,
             int height) {
         Log.d("GStreamer", "Surface changed to format " + format + " width "
                 + width + " height " + height);
-        //this.surfaceInit(holder.getSurface());
+        this.surfaceInit(holder.getSurface());
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
@@ -319,35 +349,35 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.d("GStreamer", "Surface destroyed::::");
-       
+
         this.surfaceFinalize();
         // if the surface was destroyed we also destroy the stream
         this.destroy();
     }
-    
+
 
 	@Override
 	public String getName() {
-		
+
 		return this.streamName;
 	}
 	@Override
 	public StreamState getState() {
 		return this.streamState;
 	}
-	
+
 	private String getUri() {
 		return this.uri;
 	}
-	
+
 	/**
 	 * Update the uri of the stream
 	 * @param uri the new uri
 	 * @return {@code True} if the uri was successfully updated; {@code False} otherwise.
 	 */
 	private boolean setUri(String uri)
-	{   
-	
+	{
+
 		Log.d("GSTREAMER_BACKEND", "Setting uri to:" + uri);
 		boolean uriUpdated = nativeSetUri(uri);
 			if  (uriUpdated)
@@ -358,8 +388,8 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 			else Log.d("GSTREAMER_BACKEND", "uri NOT updated! current value is ->" + this.uri);
 			return uriUpdated;
 	}
-	
-	
+
+
 	/**
      * Get the current value of latency property of this stream (Reads the value from native code to be sure to return the effective latency value)
      * @return the latency value in ms
@@ -369,22 +399,23 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		this.latency = nativeGetLatency();
 		return this.latency;
 	}
-	
-	
-	
+
+
+
 	private boolean setLatency(int latency) {
 		Log.d(TAG, "Called setLatency with proposed value:" + latency);
 		boolean result = nativeSetLatency(latency);
 		return result;
 	}
-	
+
 
 	private boolean setUriAndLatency(String uri, int latency)
 	{   Log.d(TAG, "Called setUriAndLatency with proposed uri:" + uri + " latency:" + latency);
 		boolean result = nativeSetUriAndLatency(uri, latency); // Set the URI of the media to play
+		Log.d(TAG, "result setUriAndLatency: " + result);
 		return result;
 	}// Set the URI of the media to play
-	
+
 	@Override
 	public boolean commitProperties(StreamProperties properties) {
 		String uriProperty = properties.get(StreamProperty.URI);
@@ -395,8 +426,11 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		{
 			try{
 				this.latency = Integer.parseInt(latencyProperty);
-			}catch (NumberFormatException e) {}
-			
+			}
+			catch (NumberFormatException e) {
+				e.printStackTrace();
+			}
+
 		}
 		return setUriAndLatency(this.uri, this.latency);
 	}
@@ -409,22 +443,36 @@ class GStreamerBackend implements SurfaceHolder.Callback, IStream {
 		else if (property==StreamProperty.LATENCY)
 			return String.valueOf(this.getLatency());
 		else if (property==StreamProperty.VIDEO_SIZE)
-			return this.videoSize;	
+			return this.videoSize;
 		else if (property==StreamProperty.STATE)
 			return this.streamState;
 		return null;
 	}
-	
+
 	@Override
 	public boolean loadStillImage(String uri) {
 		return this.nativeSetUri(uri);
 	}
-	
+
 	@Override
 	public String getErrorMsg() {
 		if (this.streamState==StreamState.ERROR)
 		return this.errorMsg;
 		else return "";
+	}
+
+	public void addFrameListener(IFrameListener listener) {
+		listeners.add(listener);
+	}
+
+	public void removeFrameListener(IFrameListener listener) {
+		listeners.remove(listener);
+	}
+
+	public void onFrameAvailable(byte [] frame){
+		for(IFrameListener l: listeners){
+			l.frameReady(frame);
+		}
 	}
 }
 

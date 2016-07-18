@@ -51,7 +51,8 @@ public interface IStream {
 	 *
 	 */
 	public void prepare(SurfaceView surface);
-	
+	public void prepare(SurfaceView surface, boolean frameCallback);
+
     /**
      * Play the stream
      */
@@ -94,6 +95,10 @@ public interface IStream {
 	 * @return infomrations about the type of stream error
 	 */
 	public String getErrorMsg();
+
+	public void addFrameListener(IFrameListener listener);
+
+	public void removeFrameListener(IFrameListener listener);
 		
 }
 
