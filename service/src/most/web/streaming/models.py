@@ -87,14 +87,10 @@ class StreamingDevice(models.Model):
     def _get_json_dict(self):
 
         capabilities = {}
-        if self.model.has_streaming:
-            capabilities['streaming'] = self._get_streaming_url()
-        if self.model.has_web:
-            capabilities['web'] = self._get_web_url()
-        if self.model.has_streaming:
-            capabilities['shot'] = self._get_shot_url()
-        if self.model.has_streaming:
-            capabilities['ptz'] = self._get_ptz_url()
+        capabilities['streaming'] = self._get_streaming_url()
+        capabilities['web'] = self._get_web_url()
+        capabilities['shot'] = self._get_shot_url()
+        capabilities['ptz'] = self._get_ptz_url()
 
         return {
             'uuid': self.uuid,
