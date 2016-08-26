@@ -103,6 +103,15 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# Android Studio
+*.iml
+.gradle
+local.properties
+.idea
+build
+captures
+gst-build-armeabi
+
 # MOST
 *.pyc
 *~

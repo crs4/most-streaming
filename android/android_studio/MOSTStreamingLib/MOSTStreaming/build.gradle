@@ -1,0 +1,86 @@
+apply plugin: 'com.android.model.library'
+apply plugin: 'maven-publish'
+
+model {
+    android {
+        compileSdkVersion 21
+        buildToolsVersion "21.1.2"
+
+        defaultConfig {
+            minSdkVersion.apiLevel 15
+            targetSdkVersion.apiLevel 21
+            versionCode 1
+            versionName "1.0"
+            
+        }
+        buildTypes {
+            release {
+                minifyEnabled false
+                proguardFiles.add(file('proguard-rules.pro'))
+            }
+        }
+        productFlavors {
+            create("arm") {
+                ndk.abiFilters.add("armeabi")
+            }
+        }
+        repositories {
+            mavenLocal()
+        }
+        sources {
+            main {
+                java {
+                    source {
+                        srcDirs = []
+                    }
+                }
+            }
+        }
+    }
+}
+
+def getNdkDir() {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    def ndkdir = properties.getProperty('ndk.dir', null)
+    if (ndkdir == null)
+        throw new GradleException("NDK location not found. Define location with ndk.dir in the local.properties file")
+
+    return ndkdir
+}
+
+task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
+    def ndkDir = getNdkDir()
+    commandLine "$ndkDir/ndk-build", 'V=1',
+            'NDK_PROJECT_PATH=build',
+            'NDK_APPLICATION_MK=src/main/jni/Application.mk',
+            'APP_BUILD_SCRIPT=src/main/jni/Android.mk',
+            'NDK_LIBS_OUT=src/main/jniLibs'
+}
+
+tasks.withType(JavaCompile) {
+    compileTask -> compileTask.dependsOn ndkBuild
+}
+
+dependencies {
+    compile 'com.android.support:appcompat-v7:21.0.2'
+    compile 'com.mcxiaoke.volley:library:1.0.19'
+    testCompile 'junit:junit:4.12'
+}
+
+publishing {
+    repositories {
+        maven {
+            url mavenLocal().url
+        }
+    }
+    publications {
+        aar(MavenPublication) {
+            groupId 'it.crs4.most.streaming'
+            version = '1.0'
+            artifactId 'MOSTStreaming'
+            artifact("build/outputs/aar/MOSTStreaming-arm-debug.aar")
+
+        }
+    }
+}
