@@ -11,14 +11,19 @@ package it.crs4.most.streaming.enums;
 
 /**
  * Contains all events triggered by the Streaming library
- * 
  */
 public enum StreamingEvent {
-   /** a stream internal state change occurred */
-  STREAM_STATE_CHANGED,  
-  /** the size of the video stream changed */ 
-  VIDEO_SIZE_CHANGED,      
-  /** a streaming error occurred */
-  STREAM_ERROR   			
+    /**
+     * a stream internal state change occurred
+     */
+    STREAM_STATE_CHANGED,
+    /**
+     * the size of the video stream changed
+     */
+    VIDEO_SIZE_CHANGED,
+    /**
+     * a streaming error occurred
+     */
+    STREAM_ERROR
 }
    

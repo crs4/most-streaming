@@ -9,7 +9,6 @@
 
 
 #include <string.h>
-#include <stdint.h>
 #include <jni.h>
 #include <android/log.h>
 #include <android/native_window.h>
@@ -142,19 +141,19 @@ static JNIEnv *get_jni_env(void) {
 }
 
 
-void onEos(GstAppSink *appsink,  CustomData *data){
+void onEos(GstAppSink *appsink, CustomData *data) {
 }
 
 
-GstFlowReturn  onNewPrerollFromVideoSource(GstAppSink *appsink,  CustomData *data){
+GstFlowReturn onNewPrerollFromVideoSource(GstAppSink *appsink, CustomData *data) {
     return GST_FLOW_OK;
 
 }
 
 
-GstFlowReturn  onNewBufferFromVideoSource(GstAppSink *appsink,  CustomData *data){
+GstFlowReturn onNewBufferFromVideoSource(GstAppSink *appsink, CustomData *data) {
     JNIEnv *env = get_jni_env();
-    GstSample * sample =  gst_app_sink_pull_sample((GstAppSink *)appsink);
+    GstSample *sample = gst_app_sink_pull_sample((GstAppSink *) appsink);
 
     if (sample) {
 
@@ -172,18 +171,18 @@ GstFlowReturn  onNewBufferFromVideoSource(GstAppSink *appsink,  CustomData *data
 
 
                 jbyteArray ret = (*env)->NewByteArray(env, gst_map_info.size);
-                if (ret ) {
+                if (ret) {
                     (*env)->SetByteArrayRegion(env, ret, 0, gst_map_info.size, (jbyte *) buf);
                     (*env)->CallVoidMethod(env, (CustomData *) data->app, on_frame_available, ret);
 
                 }
-                else{
+                else {
                     GST_ERROR("out of memory!");
 
                 }
 
                 gst_buffer_unmap(gst_buffer, &gst_map_info);
-                (*env)->ReleaseByteArrayElements(env, ret, (jbyte*) buf, JNI_ABORT);
+                (*env)->ReleaseByteArrayElements(env, ret, (jbyte *) buf, JNI_ABORT);
                 (*env)->DeleteLocalRef(env, ret);
 
             }
@@ -195,7 +194,7 @@ GstFlowReturn  onNewBufferFromVideoSource(GstAppSink *appsink,  CustomData *data
 //            gst_buffer_unref(gst_buffer);
 //        }
 
-    gst_sample_unref (sample);
+        gst_sample_unref(sample);
     }
     return GST_FLOW_OK;
 }
@@ -512,7 +511,7 @@ static void check_initialization_complete(CustomData *data) {
     GST_DEBUG("CALLED CHECK_INITIALIZATION_COMPLETE!!!!");
 
     JNIEnv *env = get_jni_env();
-    GST_DEBUG("!data->initialized %d",  !data->initialized);
+    GST_DEBUG("!data->initialized %d", !data->initialized);
     GST_DEBUG("!data->native_window %d", !data->native_window);
     GST_DEBUG("!data->main_loop %d", !data->main_loop);
     if (!data->initialized && data->native_window && data->main_loop) {
@@ -546,7 +545,7 @@ static void *app_function(void *userdata, jboolean frame_available_callback) {
     GSource *bus_source;
     GError *error = NULL;
     guint flags;
-    GstElement *bin, *videosink, *appsink, *tee, *video_queue, * app_queue, *video_convert;
+    GstElement *bin, *videosink, *appsink, *tee, *video_queue, *app_queue, *video_convert;
     GstPad *pad;
 
     GST_DEBUG("Creating pipeline in CustomData at %p", data);
@@ -683,7 +682,8 @@ static void *app_function(void *userdata, jboolean frame_available_callback) {
  */
 
 /* Instruct the native code to create its internal data structure, pipeline and thread */
-static jboolean gst_native_init(JNIEnv *env, jobject thiz, jstring stream_name, jint latency, jboolean frame_available) {
+static jboolean gst_native_init(JNIEnv *env, jobject thiz, jstring stream_name, jint latency,
+                                jboolean frame_available) {
     CustomData *data = g_new0(CustomData, 1);
     data->desired_position = GST_CLOCK_TIME_NONE;
     data->last_seek_time = GST_CLOCK_TIME_NONE;
@@ -998,18 +998,18 @@ static void gst_native_surface_finalize(JNIEnv *env, jobject thiz) {
 /* List of implemented native methods */
 static JNINativeMethod native_methods[] = {
         {"nativeInit",             "(Ljava/lang/String;IZ)Z", (void *) gst_native_init},
-        {"nativeFinalize",         "()V",                    (void *) gst_native_finalize},
-        {"nativeGetLatency",       "()I",                    (void *) gst_native_get_latency},
-        {"nativeSetLatency",       "(I)Z",                   (void *) gst_native_set_latency},
-        {"nativeSetUri",           "(Ljava/lang/String;)Z",  (void *) gst_native_set_uri},
-        {"nativeSetUriAndLatency", "(Ljava/lang/String;I)Z", (void *) gst_native_set_uri_and_latency},
+        {"nativeFinalize",         "()V",                     (void *) gst_native_finalize},
+        {"nativeGetLatency",       "()I",                     (void *) gst_native_get_latency},
+        {"nativeSetLatency",       "(I)Z",                    (void *) gst_native_set_latency},
+        {"nativeSetUri",           "(Ljava/lang/String;)Z",   (void *) gst_native_set_uri},
+        {"nativeSetUriAndLatency", "(Ljava/lang/String;I)Z",  (void *) gst_native_set_uri_and_latency},
 
-        {"nativePlay",             "()V",                    (void *) gst_native_play},
-        {"nativePause",            "()V",                    (void *) gst_native_pause},
-        {"nativeSetPosition",      "(I)V",                   (void *) gst_native_set_position},
-        {"nativeSurfaceInit",      "(Ljava/lang/Object;)V",  (void *) gst_native_surface_init},
-        {"nativeSurfaceFinalize",  "()V",                    (void *) gst_native_surface_finalize},
-        {"nativeClassInit",        "()Z",                    (void *) gst_native_class_init}
+        {"nativePlay",             "()V",                     (void *) gst_native_play},
+        {"nativePause",            "()V",                     (void *) gst_native_pause},
+        {"nativeSetPosition",      "(I)V",                    (void *) gst_native_set_position},
+        {"nativeSurfaceInit",      "(Ljava/lang/Object;)V",   (void *) gst_native_surface_init},
+        {"nativeSurfaceFinalize",  "()V",                     (void *) gst_native_surface_finalize},
+        {"nativeClassInit",        "()Z",                     (void *) gst_native_class_init}
 };
 
 /* Library initializer */

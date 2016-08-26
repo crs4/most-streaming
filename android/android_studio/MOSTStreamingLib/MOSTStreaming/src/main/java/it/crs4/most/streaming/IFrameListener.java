@@ -10,5 +10,5 @@
 package it.crs4.most.streaming;
 
 public interface IFrameListener {
-    public void frameReady(byte [] frame);
+    public void frameReady(byte[] frame);
 }

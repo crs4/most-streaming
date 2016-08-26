@@ -6,12 +6,12 @@
  * Dual licensed under the MIT or GPL Version 2 licenses.
  * See license-GPLv2.txt or license-MIT.txt
  */
- 
+
 package it.crs4.most.streaming.enums;
 
 public enum StreamMode {
 
-	MPEG_4,
-	MOTION_JPEG,
-	STILL_IMAGE
+    MPEG_4,
+    MOTION_JPEG,
+    STILL_IMAGE
 }

@@ -23,20 +23,19 @@ public class Size {
         width = w;
         height = h;
     }
-    
+
     @Override
-    public String toString()
-    {
-    	//return "(width:" + this.width + " , height:" + this.height + ")";
-    	return   "[ " + this.width + " x " + this.height + " ]";  // [ 320 x 392 ]
+    public String toString() {
+        //return "(width:" + this.width + " , height:" + this.height + ")";
+        return "[ " + this.width + " x " + this.height + " ]";  // [ 320 x 392 ]
     }
-    
+
     /**
      * Compares {@code obj} to this size.
      *
      * @param obj the object to compare this size with.
      * @return {@code true} if the width and height of {@code obj} is the
-     *         same as those of this size. {@code false} otherwise.
+     * same as those of this size. {@code false} otherwise.
      */
     @Override
     public boolean equals(Object obj) {
@@ -46,20 +45,27 @@ public class Size {
         Size s = (Size) obj;
         return width == s.width && height == s.height;
     }
+
     @Override
     public int hashCode() {
         return width * 32713 + height;
     }
-    /** width of the picture */
-    private int width;
-    
-    public int getWidth() {
-		return width;
-	}
 
-	public int getHeight() {
-		return height;
-	}
-	/** height of the picture */
+    /**
+     * width of the picture
+     */
+    private int width;
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    /**
+     * height of the picture
+     */
     private int height;
 }

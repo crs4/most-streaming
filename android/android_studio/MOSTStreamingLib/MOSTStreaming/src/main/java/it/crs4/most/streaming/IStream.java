@@ -10,95 +10,95 @@
 package it.crs4.most.streaming;
 
 
+import android.view.SurfaceView;
 
 import it.crs4.most.streaming.enums.StreamProperty;
 import it.crs4.most.streaming.enums.StreamState;
 import it.crs4.most.streaming.utils.Size;
 
-import android.view.SurfaceView;
-
 /**
  * An IStream object represents a single audio/video stream object. You can obtain a new IStream object by calling
  * the method {@link StreamingLib#createStream(java.util.HashMap, android.os.Handler)}.
- *
  */
 public interface IStream {
-	
-	 
+
+
     /**
-     * 
      * @return the name of this stream
      */
     public String getName();
-    
-    
+
+
     /**
-     * 
      * @return the current state of this stream
      */
     public StreamState getState();
-    
+
     /**
-     * 
      * @return the current size of the video stream
      */
     public Size getVideoSize();
-    
-    
+
+
     /**
-	 * Prepare the stream by providing a video surface
-	 * @param surfaceView the Surface where to render the stream
-	 *
-	 */
-	public void prepare(SurfaceView surface);
-	public void prepare(SurfaceView surface, boolean frameCallback);
+     * Prepare the stream by providing a video surface
+     *
+     * @param surfaceView the Surface where to render the stream
+     */
+    public void prepare(SurfaceView surface);
+
+    public void prepare(SurfaceView surface, boolean frameCallback);
 
     /**
      * Play the stream
      */
-	public void play() ;
-	
-	/**
-	 * pause the stream
-	 */
-	public void pause();
-	
+    public void play();
 
-	/**
-	 * Destroy this stream
-	 */
-	public void destroy();
+    /**
+     * pause the stream
+     */
+    public void pause();
+
+
+    /**
+     * Destroy this stream
+     */
+    public void destroy();
 
     /**
      * Reads the current value of the specified stream property
+     *
      * @param property
      * @return the value of the property
      */
-	public Object getProperty(StreamProperty property);
-	
-	/**
-	 * Commit the stream properties values specified as argument
-	 * @param properties the stream properties to update
-	 * @return true if no error occurred during the update request; False otherwise
-	 */
-	public boolean commitProperties(StreamProperties properties);
+    public Object getProperty(StreamProperty property);
 
-	/**
-	 * Load a still image from the remote camera, provided the uri
-	 * @param uri the uri pointing to the image to load
-	 * @return <code>true</code> if no error occurred during the operation, <code>false</code> otherwise
-	 */
-	public boolean loadStillImage(String uri);
-	
-	/**
-	 * Get detailed informations about a stream error (return an empty stream if the stream is not in Stream.ERROR state)
-	 * @return infomrations about the type of stream error
-	 */
-	public String getErrorMsg();
+    /**
+     * Commit the stream properties values specified as argument
+     *
+     * @param properties the stream properties to update
+     * @return true if no error occurred during the update request; False otherwise
+     */
+    public boolean commitProperties(StreamProperties properties);
 
-	public void addFrameListener(IFrameListener listener);
+    /**
+     * Load a still image from the remote camera, provided the uri
+     *
+     * @param uri the uri pointing to the image to load
+     * @return <code>true</code> if no error occurred during the operation, <code>false</code> otherwise
+     */
+    public boolean loadStillImage(String uri);
 
-	public void removeFrameListener(IFrameListener listener);
-		
+    /**
+     * Get detailed informations about a stream error (return an empty stream if the stream is not in Stream.ERROR state)
+     *
+     * @return infomrations about the type of stream error
+     */
+    public String getErrorMsg();
+
+    public void addFrameListener(IFrameListener listener);
+
+    public void removeFrameListener(IFrameListener listener);
+
 }
 
