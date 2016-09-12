@@ -457,7 +457,7 @@ static void check_media_size(CustomData *data) {
     GST_DEBUG("caps to string %s", gst_caps_to_string(caps));
 
     if (gst_video_info_from_caps(&info, caps)) {
-        info.width = info.width * info.par_n / info.par_d;
+//        info.width = info.width * info.par_n / info.par_d;
         GST_DEBUG("Media size is %dx%d, notifying application", info.width, info.height);
 
         (*env)->CallVoidMethod(env, data->app, on_media_size_changed_method_id, (jint) info.width,
