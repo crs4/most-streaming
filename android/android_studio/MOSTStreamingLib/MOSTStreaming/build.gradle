@@ -27,15 +27,15 @@ model {
         repositories {
             mavenLocal()
         }
-        sources {
-            main {
-                java {
-                    source {
-                        srcDirs = []
-                    }
-                }
-            }
-        }
+//        sources {
+//            main {
+//                java {
+//                    source {
+//                        srcDirs = []
+//                    }
+//                }
+//            }
+//        }
     }
 }
 
