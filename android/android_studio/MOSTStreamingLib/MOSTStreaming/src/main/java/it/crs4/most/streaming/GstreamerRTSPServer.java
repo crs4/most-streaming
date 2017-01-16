@@ -48,7 +48,6 @@ public class GstreamerRTSPServer implements StreamServer {
 
     @Override
     public void feedData(byte[] data) {
-        Log.d(TAG, "feedData");
         nativePushFrame(data, data.length);
 
     }
