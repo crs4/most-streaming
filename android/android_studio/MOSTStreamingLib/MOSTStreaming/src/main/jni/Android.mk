@@ -11,6 +11,10 @@ ifndef GSTREAMER_SDK_ROOT
     GSTREAMER_SDK_ROOT        := $(GSTREAMER_SDK_ROOT_ANDROID)
 endif
 
+ifndef GST_RTSP_SERVER_ROOT
+    $(error GST_RTSP_SERVER_ROOT is not defined!)
+endif
+
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := most_streaming
@@ -43,25 +47,25 @@ include $(PREBUILT_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := rtsp-server
-LOCAL_SRC_FILES := /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-address-pool.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-auth.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-client.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-context.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-media.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-media-factory.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-media-factory-uri.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-mount-points.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-params.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-permissions.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-sdp.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-server.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-session.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-session-media.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-session-pool.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-stream.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-stream-transport.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-thread-pool.c
-LOCAL_SRC_FILES += /home/mauro/work/gst-rtsp-server/gst/rtsp-server/rtsp-token.c
+LOCAL_SRC_FILES := $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-address-pool.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-auth.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-client.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-context.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-media.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-media-factory.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-media-factory-uri.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-mount-points.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-params.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-permissions.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-sdp.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-server.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-session.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-session-media.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-session-pool.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-stream.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-stream-transport.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-thread-pool.c
+LOCAL_SRC_FILES += $(GST_RTSP_SERVER_ROOT)/gst/rtsp-server/rtsp-token.c
 
 LOCAL_CPPFLAGS := -std=gnu++0x -Wall -D__ANDROID__
 LOCAL_LDLIBS := -L$(SYSROOT)/usr/lib -llog
