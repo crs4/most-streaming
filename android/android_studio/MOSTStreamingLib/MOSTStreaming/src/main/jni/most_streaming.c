@@ -596,15 +596,13 @@ static void *app_function(void *userdata, jboolean frame_available_callback) {
 //
 
 
-        char *capsstr = g_strdup_printf("video/x-raw,format=(string)NV12");
+        char *capsstr = g_strdup_printf("video/x-raw,format=(string)NV21");
         GstCaps *to_caps = gst_caps_from_string(capsstr);
 
+        gst_app_sink_set_caps(appsink, to_caps);
         gst_element_link(video_queue, videosink);
 
-        if (!gst_element_link_filtered(app_queue, video_convert, to_caps)) {
-            GST_ERROR("error linking app_queue, video_convert");
-            return NULL;
-        }
+        gst_element_link(app_queue, video_convert);
         gst_element_link(video_convert, appsink);
 
         gst_element_link(tee, app_queue);
