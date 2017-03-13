@@ -10,6 +10,8 @@
 package it.crs4.most.streaming;
 
 
+import android.view.Surface;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import it.crs4.most.streaming.enums.StreamProperty;
@@ -26,44 +28,44 @@ public interface IStream {
     /**
      * @return the name of this stream
      */
-    public String getName();
+    String getName();
 
 
     /**
      * @return the current state of this stream
      */
-    public StreamState getState();
+    StreamState getState();
 
     /**
      * @return the current size of the video stream
      */
-    public Size getVideoSize();
+    Size getVideoSize();
 
 
     /**
      * Prepare the stream by providing a video surface
      *
-     * @param surfaceView the Surface where to render the stream
+     * @param surface the Surface where to render the stream
      */
-    public void prepare(SurfaceView surface);
+    void prepare(SurfaceView surface);
 
-    public void prepare(SurfaceView surface, boolean frameCallback);
+    void prepare(SurfaceView surface, boolean frameCallback);
 
     /**
      * Play the stream
      */
-    public void play();
+    void play();
 
     /**
      * pause the stream
      */
-    public void pause();
+    void pause();
 
 
     /**
      * Destroy this stream
      */
-    public void destroy();
+    void destroy();
 
     /**
      * Reads the current value of the specified stream property
@@ -71,7 +73,9 @@ public interface IStream {
      * @param property
      * @return the value of the property
      */
-    public Object getProperty(StreamProperty property);
+    Object getProperty(StreamProperty property);
+
+    void setSurface(SurfaceHolder surface);
 
     /**
      * Commit the stream properties values specified as argument
@@ -79,7 +83,7 @@ public interface IStream {
      * @param properties the stream properties to update
      * @return true if no error occurred during the update request; False otherwise
      */
-    public boolean commitProperties(StreamProperties properties);
+    boolean commitProperties(StreamProperties properties);
 
     /**
      * Load a still image from the remote camera, provided the uri
@@ -87,18 +91,18 @@ public interface IStream {
      * @param uri the uri pointing to the image to load
      * @return <code>true</code> if no error occurred during the operation, <code>false</code> otherwise
      */
-    public boolean loadStillImage(String uri);
+    boolean loadStillImage(String uri);
 
     /**
      * Get detailed informations about a stream error (return an empty stream if the stream is not in Stream.ERROR state)
      *
      * @return infomrations about the type of stream error
      */
-    public String getErrorMsg();
+    String getErrorMsg();
 
-    public void addFrameListener(IFrameListener listener);
+    void addFrameListener(IFrameListener listener);
 
-    public void removeFrameListener(IFrameListener listener);
+    void removeFrameListener(IFrameListener listener);
 
 }
 

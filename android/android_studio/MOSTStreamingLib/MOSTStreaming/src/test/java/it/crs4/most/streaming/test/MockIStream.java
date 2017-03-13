@@ -28,6 +28,7 @@ import it.crs4.most.streaming.utils.Size;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 public class MockIStream implements IStream  {
@@ -144,6 +145,11 @@ public class MockIStream implements IStream  {
 	}
 
 	@Override
+	public void prepare(SurfaceView surface, boolean frameCallback) {
+
+	}
+
+	@Override
 	public Size getVideoSize() {
 		// TODO Auto-generated method stub
 		return null;
@@ -153,6 +159,11 @@ public class MockIStream implements IStream  {
 	public String getProperty(StreamProperty property) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public void setSurface(SurfaceHolder surface) {
+
 	}
 
 	@Override
