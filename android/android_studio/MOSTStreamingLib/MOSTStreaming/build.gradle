@@ -49,12 +49,27 @@ def getNdkDir() {
     return ndkdir
 }
 
+def getProp(prop) {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    def property_val = properties.getProperty(prop, null)
+    if (property_val == null)
+        throw new GradleException("Property not found")
+
+    return property_val
+}
+
 task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
     def ndkDir = getNdkDir()
+    def GSTREAMER_ROOT = getProp("gstreamer_root")
+    def GSTREAMER_RTSP = getProp("gstreamer_rtsp_root")
+    environment "GSTREAMER_ROOT", GSTREAMER_ROOT
+    environment "GSTREAMER_ROOT_ANDROID", GSTREAMER_ROOT
+    environment "GST_RTSP_SERVER_ROOT", GSTREAMER_RTSP
     commandLine "$ndkDir/ndk-build", 'V=1',
             'NDK_PROJECT_PATH=build',
             'NDK_APPLICATION_MK=src/main/jni/Application.mk',
-            'APP_BUILD_SCRIPT=src/main/jni/Android.mk',
+            'APP_BUILD_SCRIPT=src/main/jni/Android.1.10.4.mk',
             'NDK_LIBS_OUT=src/main/jniLibs'
 }
 

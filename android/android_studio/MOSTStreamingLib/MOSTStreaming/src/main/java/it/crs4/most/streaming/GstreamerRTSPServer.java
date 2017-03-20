@@ -5,7 +5,7 @@ import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.gstreamer.GStreamer;
+import org.freedesktop.gstreamer.GStreamer;
 
 public class GstreamerRTSPServer implements StreamServer {
 
@@ -43,13 +43,12 @@ public class GstreamerRTSPServer implements StreamServer {
 
     @Override
     public void stop() {
-
+        nativeFinalize();
     }
 
     @Override
     public void feedData(byte[] data) {
         nativePushFrame(data, data.length);
-
     }
 
 }

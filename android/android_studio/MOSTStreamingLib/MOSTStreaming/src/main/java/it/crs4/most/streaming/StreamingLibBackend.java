@@ -13,7 +13,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 
-import com.gstreamer.GStreamer;
+import org.freedesktop.gstreamer.GStreamer;
 
 import java.io.FileNotFoundException;
 import java.util.HashMap;
