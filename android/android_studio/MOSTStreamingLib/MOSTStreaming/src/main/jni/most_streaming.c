@@ -316,8 +316,7 @@ static void execute_seek(gint64 desired_position, CustomData *data) {
 
 /* Delayed seek callback. This gets called by the timer setup in the above function. */
 static gboolean delayed_seek_cb(CustomData *data) {
-    GST_DEBUG("Doing delayed seek to %"
-    GST_TIME_FORMAT, GST_TIME_ARGS(data->desired_position));
+    GST_DEBUG("Doing delayed seek to %" GST_TIME_FORMAT, GST_TIME_ARGS(data->desired_position));
     execute_seek(data->desired_position, data);
     return FALSE;
 }
@@ -878,7 +877,6 @@ static jint gst_native_get_latency(JNIEnv *env, jobject thiz) {
 
 /* Set pipeline to PLAYING state */
 static void gst_native_play(JNIEnv *env, jobject thiz) {
-
     GST_DEBUG("gst_native_play!");
     CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
     if (!data) {
@@ -890,15 +888,13 @@ static void gst_native_play(JNIEnv *env, jobject thiz) {
     data->is_live = (gst_element_set_state(data->pipeline, GST_STATE_PLAYING) ==
                      GST_STATE_CHANGE_NO_PREROLL);
     data->target_state = GST_STATE_PLAYING;
-
-
 }
 
 /* Set pipeline to PAUSED state */
 static void gst_native_pause(JNIEnv *env, jobject thiz) {
     CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
     if (!data) return;
-    GST_DEBUG("Setting state to PAUSED for stream:%s", data->stream_name);
+    GST_DEBUG("Setting state to PAUSED for stream: %s", data->stream_name);
     data->is_live = (gst_element_set_state(data->pipeline, GST_STATE_PAUSED) ==
                      GST_STATE_CHANGE_NO_PREROLL);
     data->target_state = GST_STATE_PAUSED;

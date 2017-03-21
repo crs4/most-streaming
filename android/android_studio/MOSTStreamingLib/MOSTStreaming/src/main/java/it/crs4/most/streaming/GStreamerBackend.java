@@ -27,8 +27,6 @@ import it.crs4.most.streaming.enums.StreamingEvent;
 import it.crs4.most.streaming.enums.StreamingEventType;
 import it.crs4.most.streaming.utils.Size;
 
-//import com.gstreamer.GStreamer;
-
 
 //  the scope of this class is reserved to this current package. Don't instance this class, but use the StreamingFactory.getStream() method instead.
 class GStreamerBackend implements IStream {
@@ -150,7 +148,7 @@ class GStreamerBackend implements IStream {
         if (!nativeInitResult) {
             mStreamState = StreamState.DEINITIALIZED;
             notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT,
-                StreamingEvent.STREAM_ERROR, "Stremm initialization failed:" + mStreamName + " initialized", this));
+                StreamingEvent.STREAM_ERROR, "Stream initialization failed:" + mStreamName + " initialized", this));
         }
         else {
             mStreamSurfaceView = surface;
@@ -213,7 +211,9 @@ class GStreamerBackend implements IStream {
         }
 
         mStreamState = StreamState.PLAYING_REQUEST;
-        notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Playing request for Stream: " + mStreamName, this));
+        notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT,
+                                             StreamingEvent.STREAM_STATE_CHANGED,
+                                             "Playing request for Stream: " + mStreamName, this));
         Log.d(TAG, "before call nativePlay, current state : " + mStreamState);
 //		if (mStreamState.ordinal() < StreamState.PAUSED.ordinal()){
 //			mPlayScheduled = true;
@@ -299,14 +299,18 @@ class GStreamerBackend implements IStream {
         // from pause to play or from play to pause
         if ((oldState == 3 && newState == 4) || (oldState == 4 && newState == 3)) {
             mStreamState = GStreamerBackend.getStreamStateByGstState(newState);
-            notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + mStreamState, this));
+            notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT,
+                                                 StreamingEvent.STREAM_STATE_CHANGED,
+                                                 "Stream state changed to:" + mStreamState, this));
         }
         // stream deinitialized
         else if ((oldState >= 2 && newState <= 1)) {
             mStreamInitialized = false;
             mStreamState = GStreamerBackend.getStreamStateByGstState(newState);
 
-            notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Stream state changed to:" + mStreamState, this));
+            notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT,
+                                                 StreamingEvent.STREAM_STATE_CHANGED,
+                                                 "Stream state changed to:" + mStreamState, this));
         }
         if (mStreamInitialized && mPlayScheduled) {
             nativePlay();
