@@ -18,6 +18,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -44,11 +45,12 @@ class GStreamerBackend implements IStream {
     private boolean mStreamInitialized = false;
     private boolean mPlayScheduled = false;
 
-    private Handler mNotificationHandler = null;
+    private Handler mCustomNotificationHandler = null;
+    private StreamHandler streamHandler;
     private SurfaceView mStreamSurfaceView;
     private Size mVideoSize = null;
     private String mErrorMsg;
-    private ArrayList<IFrameListener> mIFrameListeners = new ArrayList<>();
+    private ArrayList<IEventListener> mIEventListeners = new ArrayList<>();
 
     static {
         Log.d(TAG, "Loading streaming lib backend native libraries..");
@@ -87,6 +89,55 @@ class GStreamerBackend implements IStream {
 
     private long native_custom_data;      // Native code will use this to keep private data: DO NOT RENAME
 
+
+    private static class StreamHandler extends Handler {
+
+        private final WeakReference<GStreamerBackend> stream;
+
+        public StreamHandler(GStreamerBackend stream) {
+            this.stream = new WeakReference<>(stream);
+        }
+
+        private GStreamerBackend getStream() {
+            return stream.get();
+        }
+
+        @Override
+        public void handleMessage(Message streamingMessage) {
+            StreamingEventBundle event = (StreamingEventBundle) streamingMessage.obj;
+            String infoMsg = "Event Type:" + event.getEventType() + " ->" + event.getEvent() + ":" + event.getInfo();
+            Log.d(TAG, "handleMessage: Current Event:" + infoMsg);
+            String name = ((IStream) event.getData()).getName();
+            if (! name.equals(getStream().getName())) {
+                return;
+            }
+
+            if (event.getEvent() == StreamingEvent.VIDEO_SIZE_CHANGED) {
+
+                Size videoSize = ((IStream) event.getData()).getVideoSize();
+                if (videoSize != null) {
+                    int width = videoSize.getWidth();
+                    int height = videoSize.getHeight();
+                    Log.d(TAG, String.format("VIDEOSIZE width %s, height %d", width, height));
+                    getStream().onVideoSizeChanged(width, height);
+                }
+            }
+            else if (event.getEvent() == StreamingEvent.STREAM_STATE_CHANGED) {
+                StreamState streamState = ((IStream) event.getData()).getState();
+                Log.d(TAG, name + " streamState " + streamState);
+                if (streamState.equals(StreamState.PAUSED)){
+                    getStream().onPause();
+                }
+                else if (streamState.equals(StreamState.PLAYING)){
+                    getStream().onPlay();
+                }
+            }
+        }
+    }
+
+    public GStreamerBackend(HashMap<String, String> configParams) throws Exception {
+        this(configParams, null);
+    }
     public GStreamerBackend(HashMap<String, String> configParams, Handler notificationHandler) throws Exception {
         if (!libInitialized) {
             throw new Exception("Error initilializing the native library.");
@@ -95,9 +146,9 @@ class GStreamerBackend implements IStream {
             throw new Exception("Error preparing the stream since it is already initialized");
         }
 
-        if (notificationHandler == null) {
-            throw new IllegalArgumentException("Handler parameter cannot be null");
-        }
+//        if (notificationHandler == null) {
+//            throw new IllegalArgumentException("Handler parameter cannot be null");
+//        }
 
         if (!configParams.containsKey("name")) {
             throw new IllegalArgumentException("param name not found in configParams");
@@ -106,15 +157,22 @@ class GStreamerBackend implements IStream {
             throw new IllegalArgumentException("param uri not found in configParams ");
         }
 
-        mNotificationHandler = notificationHandler;
+        mCustomNotificationHandler = notificationHandler;
+        streamHandler = new StreamHandler(this);
         mStreamName = configParams.get("name");
         mStreamUri = configParams.get("uri");
         mLatency = configParams.containsKey("latency") ? Integer.valueOf(configParams.get("latency")) : 200;
     }
 
     private void notifyState(StreamingEventBundle stateBundle) {
-        Message m = Message.obtain(mNotificationHandler, stateBundle.getEventType().ordinal(), stateBundle);
+        Message m;
+        if (mCustomNotificationHandler != null) {
+            m = Message.obtain(mCustomNotificationHandler, stateBundle.getEventType().ordinal(), stateBundle);
+            m.sendToTarget();
+        }
+        m = Message.obtain(streamHandler, stateBundle.getEventType().ordinal(), stateBundle);
         m.sendToTarget();
+
     }
 
     @Override
@@ -159,7 +217,7 @@ class GStreamerBackend implements IStream {
                 public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
                     Log.d(TAG, "Surface changed to format " + format + " width for stream " + getName() +
                             + width + " height " + height);
-                    surfaceInit(holder.getSurface());
+//                    surfaceInit(holder.getSurface());
                 }
 
                 @Override
@@ -478,17 +536,37 @@ class GStreamerBackend implements IStream {
         }
     }
 
-    public void addFrameListener(IFrameListener listener) {
-        mIFrameListeners.add(listener);
+    @Override
+    public void addEventListener(IEventListener listener) {
+        mIEventListeners.add(listener);
     }
 
-    public void removeFrameListener(IFrameListener listener) {
-        mIFrameListeners.remove(listener);
+    @Override
+    public void removeEventListener(IEventListener listener) {
+        mIEventListeners.remove(listener);
     }
 
+    //FIXME: Should be private?
     public void onFrameAvailable(byte[] frame) {
-        for (IFrameListener l : mIFrameListeners) {
+        for (IEventListener l : mIEventListeners) {
             l.frameReady(frame);
+        }
+    }
+
+    private void onVideoSizeChanged(int width, int height) {
+        for (IEventListener l : mIEventListeners) {
+            l.onVideoChanged(width, height);
+        }
+    }
+
+    private void onPlay() {
+        for (IEventListener l : mIEventListeners) {
+            l.onPlay();
+        }
+    }
+    private void onPause() {
+        for (IEventListener l : mIEventListeners) {
+            l.onPause();
         }
     }
 }

@@ -10,7 +10,6 @@
 package it.crs4.most.streaming;
 
 
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -100,9 +99,10 @@ public interface IStream {
      */
     String getErrorMsg();
 
-    void addFrameListener(IFrameListener listener);
+    void addEventListener(IEventListener listener);
 
-    void removeFrameListener(IFrameListener listener);
+    void removeEventListener(IEventListener listener);
+
 
 }
 

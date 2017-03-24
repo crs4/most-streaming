@@ -37,6 +37,8 @@ public interface StreamingLib {
      * @param notificationHandler the handler where to receive all notifications from the Library
      * @throws Exception if an error occurred during the stream initialization
      */
+
     public IStream createStream(HashMap<String, String> configParams, Handler notificationHandler) throws Exception;
 
+    public IStream createStream(HashMap<String, String> configParams) throws Exception;
 }
