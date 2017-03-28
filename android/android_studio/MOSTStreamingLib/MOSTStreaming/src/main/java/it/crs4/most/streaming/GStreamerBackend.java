@@ -270,17 +270,17 @@ class GStreamerBackend implements IStream {
             return;
         }
 
+		if (mStreamState.ordinal() < StreamState.INITIALIZED.ordinal()){
+			mPlayScheduled = true;
+			Log.d(TAG, "play scheduled");
+		}
+else {
         mStreamState = StreamState.PLAYING_REQUEST;
         notifyState(new StreamingEventBundle(StreamingEventType.STREAM_EVENT, StreamingEvent.STREAM_STATE_CHANGED, "Playing request for Stream: " + mStreamName, this));
         Log.d(TAG, "before call nativePlay, current state : " + mStreamState);
-//		if (mStreamState.ordinal() < StreamState.PAUSED.ordinal()){
-//			mPlayScheduled = true;
-//			Log.d(TAG, "play scheduled");
-//		}
-//
-//		else
         nativePlay();
         Log.d(TAG, "nativePlay called");
+        }
     }
 
     /**
