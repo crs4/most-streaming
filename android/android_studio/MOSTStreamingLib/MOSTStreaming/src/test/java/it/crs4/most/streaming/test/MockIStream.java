@@ -184,12 +184,12 @@ public class MockIStream implements IStream  {
 	}
 
 	@Override
-	public void addFrameListener(IFrameListener listener){
+	public void addFrameListener(IEventListener listener){
 
 	}
 
 	@Override
-	public void removeFrameListener(IFrameListener listener){
+	public void removeFrameListener(IEventListener listener){
 
 	}
 

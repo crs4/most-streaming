@@ -74,6 +74,11 @@ public class StreamingLibBackend implements StreamingLib {
     }
 
     @Override
+    public IStream createStream(HashMap<String, String> configParams)throws Exception {
+        return createStream(configParams, null);
+    }
+
+                                @Override
     public IStream createStream(HashMap<String, String> configParams,
                                 Handler notificationHandler) throws Exception {
         if (!isLibInitialized) {

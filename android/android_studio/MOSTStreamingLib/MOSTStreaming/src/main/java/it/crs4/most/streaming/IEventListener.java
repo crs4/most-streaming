@@ -9,6 +9,11 @@
 
 package it.crs4.most.streaming;
 
-public interface IFrameListener {
+public interface IEventListener {
     public void frameReady(byte[] frame);
+    public void onPlay();
+    public void onPause();
+    public void onVideoChanged(int width, int height);
+
+
 }
