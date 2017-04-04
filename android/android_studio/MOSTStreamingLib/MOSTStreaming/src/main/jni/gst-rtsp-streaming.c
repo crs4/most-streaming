@@ -41,6 +41,8 @@ typedef struct _CustomData {
   guint64 frame_num;
   GstElement *appsrc;
   gboolean accept_data;
+  int video_width;
+  int video_height
 } CustomData;
 
 /* These global variables cache values which are not changing during execution */
@@ -152,7 +154,7 @@ static jboolean gst_native_push_data(JNIEnv * env, jobject thiz, jbyteArray byte
             return JNI_TRUE;
         }
 
-        jint frame_rate = 15;
+        jint frame_rate = 30;
         buffer = gst_buffer_new_allocate (NULL, data_len, NULL);
         gst_buffer_map(buffer,&map,GST_MAP_WRITE);
 
@@ -214,9 +216,9 @@ static void media_configure(GstRTSPMediaFactory * factory, GstRTSPMedia * media,
     g_object_set (G_OBJECT (data->appsrc), "caps",
       gst_caps_new_simple ("video/x-raw",
           "format", G_TYPE_STRING, "NV21",
-          "width", G_TYPE_INT, 320,
-          "height", G_TYPE_INT, 240,
-          "framerate", GST_TYPE_FRACTION, 15, 1,
+          "width", G_TYPE_INT, data->video_width,
+          "height", G_TYPE_INT, data->video_height,
+          "framerate", GST_TYPE_FRACTION, 30, 1,
           NULL), NULL);
 
 
@@ -315,7 +317,7 @@ static void *app_function (void *userdata) {
  */
 
 /* Instruct the native code to create its internal data structure, pipeline and thread */
-static void gst_native_init (JNIEnv* env, jobject thiz) {
+static void gst_native_init (JNIEnv* env, jobject thiz, int video_width, int video_height) {
   CustomData *data = g_new0 (CustomData, 1);
   SET_CUSTOM_DATA (env, thiz, custom_data_field_id, data);
   GST_DEBUG_CATEGORY_INIT (debug_category, "most-streaming-rtsp", 0, "most-streaming-rtsp");
@@ -324,6 +326,10 @@ static void gst_native_init (JNIEnv* env, jobject thiz) {
   gst_debug_set_threshold_for_name("rtspserver", GST_LEVEL_LOG);
   GST_DEBUG ("Created CustomData at %p", data);
   data->app = (*env)->NewGlobalRef (env, thiz);
+
+  data->video_width = video_width;
+  data->video_height = video_height;
+
   GST_DEBUG ("Created GlobalRef for app object at %p", data->app);
   pthread_create (&gst_app_thread, NULL, &app_function, data);
 }
@@ -378,7 +384,7 @@ static jboolean gst_native_class_init (JNIEnv* env, jclass klass) {
 
 /* List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-  { "nativeInit", "()V", (void *) gst_native_init},
+  { "nativeInit", "(II)V", (void *) gst_native_init},
   { "nativeFinalize", "()V", (void *) gst_native_finalize},
   { "nativePlay", "()V", (void *) gst_native_play},
   { "nativePause", "()V", (void *) gst_native_pause},

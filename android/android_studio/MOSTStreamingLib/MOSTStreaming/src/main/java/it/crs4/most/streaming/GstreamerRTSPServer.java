@@ -10,7 +10,7 @@ import com.gstreamer.GStreamer;
 public class GstreamerRTSPServer implements StreamServer {
 
     private static String TAG = "GstreamerRTSPServer";
-    private native void nativeInit();     // Initialize native code, build pipeline, etc
+    private native void nativeInit(int videoWidth, int videoHeight);     // Initialize native code, build pipeline, etc
     private native void nativeFinalize(); // Destroy pipeline and shutdown native code
     private native void nativePlay();     // Set pipeline to PLAYING
     private native void nativePause();    // Set pipeline to PAUSED
@@ -37,8 +37,8 @@ public class GstreamerRTSPServer implements StreamServer {
     }
 
     @Override
-    public void start() {
-        nativeInit();
+    public void start(int videoWidth, int videoHeight) {
+        nativeInit(videoWidth, videoHeight);
     }
 
     @Override
