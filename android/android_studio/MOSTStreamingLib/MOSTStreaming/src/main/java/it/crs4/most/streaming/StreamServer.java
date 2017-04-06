@@ -2,7 +2,8 @@ package it.crs4.most.streaming;
 
 
 public interface StreamServer {
-    public void start();
-    public void stop();
-    public void feedData(byte [] data);
+    void start(int videoWidth, int videoHeight, int rate);
+    void stop();
+    void feedData(byte [] data);
+    boolean isRunning();
 }
