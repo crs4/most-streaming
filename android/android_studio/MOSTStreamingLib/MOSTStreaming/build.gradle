@@ -11,7 +11,7 @@ model {
             targetSdkVersion.apiLevel 21
             versionCode 1
             versionName "1.0"
-            
+
         }
         buildTypes {
             release {
@@ -39,18 +39,23 @@ model {
     }
 }
 
-def getNdkDir() {
+def getProp(prop) {
     Properties properties = new Properties()
     properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    def ndkdir = properties.getProperty('ndk.dir', null)
-    if (ndkdir == null)
-        throw new GradleException("NDK location not found. Define location with ndk.dir in the local.properties file")
+    def property_val = properties.getProperty(prop, null)
+    if (property_val == null)
+        throw new GradleException("Property not found " + prop + ". You must set it in local.properties file")
 
-    return ndkdir
+    return property_val
 }
 
 task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
-    def ndkDir = getNdkDir()
+    def ndkDir = getProp("ndk.dir")
+    def gstreamerRoot = getProp("gstreamer.dir")
+    def gstreamerRTSPRoot = getProp("gstreamer_rtsp.dir")
+    environment "GSTREAMER_ROOT", gstreamerRoot
+    environment "GSTREAMER_ROOT_ANDROID", gstreamerRoot
+    environment "GST_RTSP_SERVER_ROOT", gstreamerRTSPRoot
     commandLine "$ndkDir/ndk-build", 'V=1',
             'NDK_PROJECT_PATH=build',
             'NDK_APPLICATION_MK=src/main/jni/Application.mk',
